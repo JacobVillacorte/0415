@@ -192,7 +192,6 @@
     <p class="hint">Text-only portrait from your photo: zoom in to see the words, zoom out to see the face.</p>
   </div>
 
-  <script src="config.js"></script>
   <script>
     const wrap = document.getElementById('portraitWrap');
     const canvas = document.getElementById('portraitCanvas');
@@ -203,11 +202,7 @@
     const resetBtn = document.getElementById('resetBtn');
     const source = new Image();
     source.src = 'picjah1.png';
-
-    const textSource = (
-      (window.ANNIVERSARY_CONFIG && window.ANNIVERSARY_CONFIG.portraitText) ||
-      'I love you I love you I love you I love you I love you I love you '
-    ).replace(/\s+/g, ' ').trim() + ' ';
+    const phrase = 'I love you';
 
     let scale = 1;
     let offsetX = 0;
@@ -222,6 +217,10 @@
     let pinchStartScale = 1;
     let renderQueued = false;
     let imageReady = false;
+    let toneMap = [];
+    let mapCols = 0;
+    let mapRows = 0;
+    let mapRatio = 1;
 
     function resizeCanvas() {
       const rect = wrap.getBoundingClientRect();
@@ -259,80 +258,85 @@
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, width, height);
 
-      const fontSize = Math.max(5.5, Math.min(width, height) / 88) / scale;
-      const charW = fontSize * 0.62;
-      const lineH = fontSize * 1.05;
-      const columns = Math.ceil(width / charW) + 2;
-      const rows = Math.ceil(height / lineH) + 2;
-
-      const sampleCanvas = document.createElement('canvas');
-      sampleCanvas.width = columns;
-      sampleCanvas.height = rows;
-      const sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
-      const sourceRatio = source.width / source.height;
-      const sampleRatio = columns / rows;
-      let cropWidth = source.width;
-      let cropHeight = source.height;
-      let cropX = 0;
-      let cropY = 0;
-
-      if (sourceRatio > sampleRatio) {
-        cropWidth = source.height * sampleRatio;
-        cropX = (source.width - cropWidth) / 2;
+      const viewRatio = width / height;
+      let drawW;
+      let drawH;
+      if (mapRatio > viewRatio) {
+        drawW = width * 0.94 * scale;
+        drawH = drawW / mapRatio;
       } else {
-        cropHeight = source.width / sampleRatio;
-        cropY = (source.height - cropHeight) / 2;
+        drawH = height * 0.9 * scale;
+        drawW = drawH * mapRatio;
       }
 
-      sampleCtx.drawImage(source, cropX, cropY, cropWidth, cropHeight, 0, 0, columns, rows);
-      const pixels = sampleCtx.getImageData(0, 0, columns, rows).data;
+      const left = width / 2 - drawW / 2 + offsetX;
+      const top = height / 2 - drawH / 2 + offsetY;
+      const cellW = drawW / mapCols;
+      const cellH = drawH / mapRows;
+      const fontSize = Math.max(3.8, Math.min(cellW, cellH) * 0.9);
 
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.font = `700 ${fontSize}px Consolas`;
 
-      const centerX = width / 2 + offsetX;
-      const centerY = height / 2 + offsetY;
-      const sourceLeft = centerX - (columns * charW) / 2;
-      const sourceTop = centerY - (rows * lineH) / 2;
-      let pointer = 0;
+      for (let y = 0; y < mapRows; y += 1) {
+        for (let x = 0; x < mapCols; x += 1) {
+          const darkness = toneMap[y * mapCols + x];
+          const drawX = left + x * cellW;
+          const drawY = top + y * cellH;
 
-      for (let y = 0; y < rows; y += 1) {
-        for (let x = 0; x < columns; x += 1) {
-          const index = (y * columns + x) * 4;
-          const red = pixels[index];
-          const green = pixels[index + 1];
-          const blue = pixels[index + 2];
-          const brightness = (red + green + blue) / 3;
-          const darkness = Math.pow(1 - brightness / 255, 1.15);
-          const ch = textSource[pointer % textSource.length];
-          pointer += 1;
-
-          const drawX = sourceLeft + x * charW;
-          const drawY = sourceTop + y * lineH;
-
-          // Highlights keep wider spacing; shadows use denser overlap.
-          const skip = darkness < 0.24 && ((x + y) % 3 !== 0);
-          if (skip) {
+          // Horizontal lyric-like flow with density by luminance.
+          const spacingGate = darkness > 0.75 ? 1 : darkness > 0.45 ? 2 : 4;
+          if ((x % spacingGate) !== 0) {
             continue;
           }
 
-          const alpha = Math.min(1, 0.08 + darkness * 1.2);
+          const alpha = Math.min(1, 0.08 + darkness * 1.08);
           ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
           ctx.shadowColor = 'rgba(0, 0, 0, 0.98)';
-          ctx.shadowBlur = Math.max(0, fontSize * 0.08);
-          ctx.fillText(ch, drawX, drawY);
+          ctx.shadowBlur = Math.max(0, fontSize * 0.06);
+          ctx.fillText(phrase, drawX, drawY);
 
-          if (darkness > 0.58 && ch !== ' ') {
+          if (darkness > 0.62) {
             ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.12)})`;
-            ctx.fillText(ch, drawX + charW * 0.22, drawY);
+            ctx.fillText(phrase, drawX + cellW * 0.28, drawY);
           }
 
-          if (darkness > 0.78 && ch !== ' ') {
+          if (darkness > 0.82) {
             ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.2)})`;
-            ctx.fillText(ch, drawX - charW * 0.14, drawY + lineH * 0.16);
+            ctx.fillText(phrase, drawX - cellW * 0.22, drawY + cellH * 0.12);
           }
         }
+      }
+    }
+
+    function buildToneMap() {
+      const targetCols = 180;
+      const sourceRatio = source.width / source.height;
+      const targetRows = Math.max(120, Math.floor(targetCols / sourceRatio));
+
+      const sampleCanvas = document.createElement('canvas');
+      sampleCanvas.width = targetCols;
+      sampleCanvas.height = targetRows;
+      const sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
+
+      sampleCtx.drawImage(source, 0, 0, targetCols, targetRows);
+      const pixels = sampleCtx.getImageData(0, 0, targetCols, targetRows).data;
+
+      mapCols = targetCols;
+      mapRows = targetRows;
+      mapRatio = mapCols / mapRows;
+      toneMap = new Array(mapCols * mapRows);
+
+      for (let i = 0; i < toneMap.length; i += 1) {
+        const pxIndex = i * 4;
+        const red = pixels[pxIndex];
+        const green = pixels[pxIndex + 1];
+        const blue = pixels[pxIndex + 2];
+        const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+        // Contrast curve for cleaner facial structure.
+        const darkness = Math.min(1, Math.max(0, Math.pow(1 - luminance, 1.28)));
+        toneMap[i] = darkness;
       }
     }
 
@@ -344,7 +348,7 @@
     }
 
     function clampScale(value) {
-      return Math.min(2.4, Math.max(0.8, value));
+      return Math.min(7, Math.max(0.7, value));
     }
 
     zoomRange.addEventListener('input', () => {
@@ -454,6 +458,7 @@
 
     source.onload = () => {
       imageReady = true;
+      buildToneMap();
       resizeCanvas();
       applyTransform();
     };
