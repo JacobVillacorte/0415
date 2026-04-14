@@ -161,6 +161,8 @@ function goToScreen(index) {
   prevScreenBtn.disabled = currentScreen === 0;
   nextScreenBtn.disabled = currentScreen === screens.length - 1;
   screenCountEl.textContent = `${currentScreen + 1} / ${screens.length}`;
+
+  screens[currentScreen].scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function setupScreens() {

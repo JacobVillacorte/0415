@@ -18,7 +18,7 @@
   <div class="bg-noise" aria-hidden="true"></div>
 
   <main class="screen-deck" id="screenDeck" aria-live="polite">
-    <section class="screen active" data-screen="0" aria-label="Hero screen">
+    <section class="screen screen-hero" id="screenHero" data-screen="0" aria-label="Hero screen">
       <div class="section hero">
         <p class="eyebrow">For my favorite person</p>
         <h1><span id="partnerName">My Love</span>, happy anniversary.</h1>
@@ -33,7 +33,7 @@
       </div>
     </section>
 
-    <section class="screen" data-screen="1" aria-label="Stats and timeline screen">
+    <section class="screen screen-story" id="screenStory" data-screen="1" aria-label="Stats and timeline screen">
       <div class="section screen-content">
         <section class="stats" aria-label="Anniversary stats">
           <article class="stat-card">
@@ -57,7 +57,7 @@
       </div>
     </section>
 
-    <section class="screen" data-screen="2" aria-label="Photo memories screen">
+    <section class="screen screen-photos" id="screenPhotos" data-screen="2" aria-label="Photo memories screen">
       <div class="section screen-content memories">
         <h2>Our sponty trips and dates</h2>
         <p id="memoryWish" class="memory-wish">
@@ -67,7 +67,7 @@
       </div>
     </section>
 
-    <section class="screen" data-screen="3" aria-label="Reasons screen">
+    <section class="screen screen-reasons" id="screenReasons" data-screen="3" aria-label="Reasons screen">
       <div class="section screen-content reasons-wrap">
         <section class="reasons" aria-label="Reasons I love you">
           <h2>Reasons I love you</h2>
@@ -80,6 +80,17 @@
             <button id="nextReasonBtn" class="btn btn-primary" type="button">Next</button>
           </div>
         </section>
+      </div>
+    </section>
+
+    <section class="screen screen-portrait" id="screenPortrait" data-screen="4" aria-label="Portrait screen">
+      <div class="section portrait-cta">
+        <p class="eyebrow">One last screen</p>
+        <h2>Open the portrait</h2>
+        <p class="portrait-copy">
+          A drawn-style portrait made to feel like your favorite memory, with <span>I love you</span> woven into the image.
+        </p>
+        <a class="btn btn-primary portrait-link" href="portrait.html">View portrait</a>
       </div>
     </section>
   </main>

@@ -20,7 +20,7 @@
 html,
 body {
   margin: 0;
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
@@ -31,7 +31,8 @@ body {
     radial-gradient(circle at 82% 20%, rgba(255, 130, 130, 0.22), transparent 30%),
     radial-gradient(circle at 65% 85%, rgba(255, 164, 138, 0.2), transparent 36%),
     linear-gradient(150deg, var(--bg-1) 0%, var(--bg-2) 32%, var(--bg-3) 65%, var(--bg-4) 100%);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .bg-noise {
@@ -52,25 +53,23 @@ body {
 
 .screen-deck {
   position: relative;
-  height: 100dvh;
   width: 100%;
+  min-height: 100%;
+  padding-bottom: 6rem;
 }
 
 .screen {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transform: translateX(24px) scale(0.995);
-  transition: opacity 320ms ease, transform 320ms ease;
-  pointer-events: none;
-  overflow: hidden;
-  padding: 2.3rem 0 7rem;
+  position: relative;
+  min-height: 100svh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  scroll-margin-top: 0.5rem;
+  padding: 2.2rem 0 5.5rem;
 }
 
 .screen.active {
-  opacity: 1;
-  transform: translateX(0) scale(1);
-  pointer-events: auto;
+  outline: none;
 }
 
 .screen-content {
@@ -79,9 +78,30 @@ body {
 }
 
 .hero {
-  min-height: calc(100dvh - 10rem);
+  min-height: calc(100svh - 8rem);
   display: grid;
   align-content: center;
+}
+
+.screen-hero,
+.screen-portrait {
+  justify-content: center;
+}
+
+.screen-story,
+.screen-photos,
+.screen-reasons {
+  align-items: flex-start;
+}
+
+.screen-story .screen-content,
+.screen-photos .screen-content,
+.screen-reasons .screen-content {
+  padding-top: 1rem;
+}
+
+.screen-portrait .section {
+  width: min(760px, calc(100% - 2rem));
 }
 
 .eyebrow {
@@ -235,6 +255,7 @@ h1 {
 
 .memories {
   align-content: start;
+  padding-bottom: 2rem;
 }
 
 .memory-wish {
@@ -270,7 +291,12 @@ h1 {
 
 .reasons-wrap {
   align-content: center;
-  min-height: calc(100dvh - 12rem);
+  min-height: calc(100svh - 10rem);
+  padding-bottom: 2rem;
+}
+
+.screen-reasons {
+  align-items: center;
 }
 
 .reasons {
@@ -344,6 +370,33 @@ h1 {
   color: var(--ink-soft);
 }
 
+.portrait-cta {
+  min-height: calc(100svh - 11rem);
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 0.9rem;
+}
+
+.portrait-cta h2 {
+  margin: 0;
+  font-size: clamp(2.4rem, 7vw, 4.2rem);
+}
+
+.portrait-copy {
+  margin: 0 auto;
+  max-width: 48ch;
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+}
+
+.portrait-copy span {
+  color: #ffd8cc;
+}
+
+.portrait-link {
+  justify-self: center;
+}
+
 .surprise-modal {
   border: 1px solid var(--line);
   border-radius: 22px;
@@ -383,10 +436,6 @@ h1 {
 }
 
 @media (max-width: 820px) {
-  .screen {
-    padding-top: 1.2rem;
-  }
-
   .stats {
     grid-template-columns: 1fr;
   }
@@ -396,7 +445,7 @@ h1 {
   }
 
   .hero {
-    min-height: calc(100dvh - 12rem);
+    min-height: calc(100svh - 10rem);
   }
 
   .photo-grid {
@@ -414,5 +463,13 @@ h1 {
 
   .btn {
     font-size: 1rem;
+  }
+
+  .screen {
+    padding: 1.3rem 0 5rem;
+  }
+
+  .portrait-cta {
+    min-height: calc(100svh - 9rem);
   }
 }
