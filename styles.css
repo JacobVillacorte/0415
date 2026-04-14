@@ -401,9 +401,6 @@ h1 {
 
   .photo-grid {
     grid-template-columns: 1fr;
-    max-height: 45dvh;
-    overflow: auto;
-    padding-right: 0.2rem;
   }
 
   .photo-card {
