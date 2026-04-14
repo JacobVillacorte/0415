@@ -29,15 +29,17 @@
         radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.08), transparent 30%),
         radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.06), transparent 28%),
         linear-gradient(160deg, var(--bg-1), var(--bg-2) 48%, var(--bg-3));
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     .frame {
       min-height: 100svh;
-      display: grid;
-      grid-template-rows: auto 1fr auto;
+      display: flex;
+      flex-direction: column;
       gap: 1rem;
       padding: 1rem;
+      padding-bottom: 2rem;
     }
 
     .topbar,
@@ -95,11 +97,11 @@
     }
 
     .portrait-wrap {
-      min-height: 70svh;
+      min-height: 76svh;
       display: grid;
       place-items: center;
       overflow: hidden;
-      touch-action: none;
+      touch-action: auto;
       user-select: none;
       -webkit-user-select: none;
       cursor: grab;
@@ -118,6 +120,20 @@
       transform-origin: center center;
       will-change: transform;
       position: relative;
+    }
+
+    .portrait-image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      filter: grayscale(1) contrast(1.12) brightness(0.9);
+      opacity: 0.92;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     .text-layer::after {
@@ -144,10 +160,10 @@
       color: transparent;
       -webkit-text-fill-color: transparent;
       background-image: url("./picjah1.png");
-      background-attachment: fixed;
+      background-attachment: scroll;
       background-position: center;
       background-repeat: no-repeat;
-      background-size: cover;
+      background-size: contain;
       -webkit-background-clip: text;
       background-clip: text;
       filter: brightness(0.83) grayscale(1) contrast(1.24);
@@ -194,14 +210,14 @@
 
     @media (max-width: 720px) {
       .frame { padding: 0.8rem; }
-      .portrait-wrap { min-height: 62svh; }
+      .portrait-wrap { min-height: 68svh; }
       .portrait-text {
-        font-size: 8.4px;
-        line-height: 5.8px;
+        font-size: 7.8px;
+        line-height: 5.4px;
       }
       .portrait-text.ultra {
-        font-size: 7px;
-        line-height: 4.8px;
+        font-size: 6.4px;
+        line-height: 4.4px;
       }
     }
   </style>
@@ -217,7 +233,8 @@
     <div class="portrait-stage">
       <div id="portraitWrap" class="portrait-wrap">
         <div id="textLayer" class="text-layer" aria-label="Portrait memory">
-            <p id="portraitText" class="portrait-text">Loading portrait text...</p>
+          <img id="portraitImage" class="portrait-image" alt="Portrait memory" />
+          <p id="portraitText" class="portrait-text">Loading portrait text...</p>
         </div>
       </div>
     </div>
@@ -236,6 +253,7 @@
   <script>
     const wrap = document.getElementById('portraitWrap');
     const textLayer = document.getElementById('textLayer');
+    const portraitImage = document.getElementById('portraitImage');
     const portraitText = document.getElementById('portraitText');
     const zoomRange = document.getElementById('zoomRange');
     const zoomInBtn = document.getElementById('zoomInBtn');
@@ -373,6 +391,10 @@
     });
 
     wrap.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'touch') {
+        return;
+      }
+
       event.preventDefault();
       activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
@@ -434,6 +456,7 @@
     previewImage.onload = () => {
       document.documentElement.style.setProperty('--portrait-w', String(previewImage.naturalWidth || 3));
       document.documentElement.style.setProperty('--portrait-h', String(previewImage.naturalHeight || 4));
+      portraitImage.src = imagePath;
       portraitText.style.backgroundImage = `url(${imagePath})`;
       buildText();
       resetView();
