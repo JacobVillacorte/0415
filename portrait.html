@@ -116,46 +116,11 @@
       cursor: grabbing;
     }
 
-    .word-grid {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      grid-template-columns: repeat(8, 1fr);
-      grid-template-rows: repeat(10, 1fr);
-      gap: 0;
-      padding: 1rem;
-      z-index: 1;
-      pointer-events: none;
-      opacity: 0.92;
-      mix-blend-mode: screen;
-    }
-
-    .word-grid span {
-      display: grid;
-      place-items: center;
-      font-family: "Times New Roman", Georgia, serif;
-      font-size: clamp(0.72rem, 1.8vw, 1.1rem);
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: rgba(255, 255, 255, 0.72);
-      text-shadow: 0 0 1px rgba(0, 0, 0, 0.95);
-      -webkit-text-stroke: 0.35px rgba(0, 0, 0, 0.75);
-      transform: rotate(var(--rotate, 0deg)) scale(var(--scale, 1));
-      opacity: var(--alpha, 0.5);
-      white-space: nowrap;
-    }
-
-    .portrait-wrap img {
-      max-width: none;
-      width: min(92vw, 760px);
-      height: auto;
-      transform: scale(1);
-      transform-origin: center center;
-      transition: transform 120ms ease;
-      filter: grayscale(1) contrast(1.28) brightness(1.08);
-      mix-blend-mode: lighten;
-      position: relative;
-      z-index: 2;
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: transparent;
     }
 
     .ink-overlay {
@@ -235,8 +200,7 @@
 
     <div class="portrait-stage">
       <div id="portraitWrap" class="portrait-wrap">
-        <div id="wordGrid" class="word-grid" aria-hidden="true"></div>
-        <img id="portraitImage" src="picjah1.png" alt="Portrait memory" />
+        <canvas id="portraitCanvas" aria-label="Portrait memory"></canvas>
         <div class="ink-overlay" aria-hidden="true"><span>I LOVE YOU</span></div>
       </div>
     </div>
@@ -252,14 +216,15 @@
 
   <script>
     const wrap = document.getElementById('portraitWrap');
-    const img = document.getElementById('portraitImage');
-    const wordGrid = document.getElementById('wordGrid');
+    const canvas = document.getElementById('portraitCanvas');
+    const ctx = canvas.getContext('2d');
     const zoomRange = document.getElementById('zoomRange');
     const zoomInBtn = document.getElementById('zoomInBtn');
     const zoomOutBtn = document.getElementById('zoomOutBtn');
     const resetBtn = document.getElementById('resetBtn');
+    const source = new Image();
+    source.src = 'picjah1.png';
 
-    const words = Array.from({ length: 80 }, (_, index) => index);
     let scale = 1;
     let offsetX = 0;
     let offsetY = 0;
@@ -271,26 +236,99 @@
     let originOffsetY = 0;
     let pinchStartDistance = 0;
     let pinchStartScale = 1;
+    let renderQueued = false;
+    let imageReady = false;
 
-    function buildWordGrid() {
-      wordGrid.innerHTML = '';
-      words.forEach((value) => {
-        const word = document.createElement('span');
-        const rotation = ((value % 9) - 4) * 2;
-        const size = 0.85 + (value % 6) * 0.08;
-        const alpha = 0.18 + (value % 8) * 0.07;
-        word.textContent = 'I LOVE YOU';
-        word.style.setProperty('--rotate', `${rotation}deg`);
-        word.style.setProperty('--scale', String(size));
-        word.style.setProperty('--alpha', String(alpha));
-        wordGrid.appendChild(word);
-      });
+    function resizeCanvas() {
+      const rect = wrap.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      requestRender();
     }
 
     function applyTransform() {
-      img.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
-      wordGrid.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
       zoomRange.value = String(scale);
+      requestRender();
+    }
+
+    function requestRender() {
+      if (renderQueued) return;
+      renderQueued = true;
+      window.requestAnimationFrame(() => {
+        renderQueued = false;
+        drawPortrait();
+      });
+    }
+
+    function drawPortrait() {
+      if (!imageReady) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, width, height);
+
+      const baseCell = Math.max(8, Math.min(width, height) / 28);
+      const cellSize = baseCell / scale;
+      const columns = Math.ceil(width / cellSize) + 2;
+      const rows = Math.ceil(height / cellSize) + 2;
+
+      const sampleCanvas = document.createElement('canvas');
+      sampleCanvas.width = columns;
+      sampleCanvas.height = rows;
+      const sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
+      const sourceRatio = source.width / source.height;
+      const sampleRatio = columns / rows;
+      let cropWidth = source.width;
+      let cropHeight = source.height;
+      let cropX = 0;
+      let cropY = 0;
+
+      if (sourceRatio > sampleRatio) {
+        cropWidth = source.height * sampleRatio;
+        cropX = (source.width - cropWidth) / 2;
+      } else {
+        cropHeight = source.width / sampleRatio;
+        cropY = (source.height - cropHeight) / 2;
+      }
+
+      sampleCtx.drawImage(source, cropX, cropY, cropWidth, cropHeight, 0, 0, columns, rows);
+      const pixels = sampleCtx.getImageData(0, 0, columns, rows).data;
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const centerX = width / 2 + offsetX;
+      const centerY = height / 2 + offsetY;
+      const sourceLeft = centerX - (columns * cellSize) / 2;
+      const sourceTop = centerY - (rows * cellSize) / 2;
+
+      for (let y = 0; y < rows; y += 1) {
+        for (let x = 0; x < columns; x += 1) {
+          const index = (y * columns + x) * 4;
+          const red = pixels[index];
+          const green = pixels[index + 1];
+          const blue = pixels[index + 2];
+          const brightness = (red + green + blue) / 3;
+          const wordOpacity = 1 - brightness / 255;
+          const wordSize = cellSize * (0.95 + wordOpacity * 0.65);
+          const drawX = sourceLeft + x * cellSize;
+          const drawY = sourceTop + y * cellSize;
+
+          ctx.font = `700 ${wordSize}px Georgia`;
+          ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.96, 0.12 + wordOpacity * 0.95)})`;
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+          ctx.shadowBlur = Math.max(0, wordSize * 0.06);
+          ctx.fillText('I LOVE YOU', drawX, drawY);
+        }
+      }
     }
 
     function resetView() {
@@ -352,6 +390,7 @@
     }
 
     wrap.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
       activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
       if (activePointers.size === 1) {
@@ -408,7 +447,14 @@
       applyTransform();
     }, { passive: false });
 
-    buildWordGrid();
+    source.onload = () => {
+      imageReady = true;
+      resizeCanvas();
+      applyTransform();
+    };
+
+    window.addEventListener('resize', resizeCanvas);
+
     resetView();
   </script>
 </body>

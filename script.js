@@ -27,6 +27,7 @@ const nextReasonBtn = document.getElementById("nextReasonBtn");
 const prevReasonBtn = document.getElementById("prevReasonBtn");
 const spawnHeartsBtn = document.getElementById("spawnHeartsBtn");
 const musicToggleBtn = document.getElementById("musicToggle");
+const songSelect = document.getElementById("songSelect");
 
 const bgMusic = document.getElementById("bgMusic");
 const musicSource = document.getElementById("musicSource");
@@ -37,6 +38,7 @@ const ctx = canvas.getContext("2d");
 let reasonCursor = 0;
 let hearts = [];
 let currentScreen = 0;
+let currentSongIndex = 0;
 let startX = 0;
 let startY = 0;
 let hasTouchStart = false;
@@ -269,14 +271,56 @@ function setupScreens() {
 
 function setupMusic() {
   const musicConfig = config.music || {};
-  if (!musicConfig.enabled || !musicConfig.url) {
+  const songs = Array.isArray(musicConfig.songs) ? musicConfig.songs : [];
+
+  if (!musicConfig.enabled || !songs.length) {
     musicToggleBtn.style.display = "none";
+    songSelect.style.display = "none";
     return;
   }
 
-  musicSource.src = musicConfig.url;
   bgMusic.volume = typeof musicConfig.volume === "number" ? musicConfig.volume : 0.55;
-  bgMusic.load();
+  songSelect.innerHTML = "";
+
+  songs.forEach((song, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = song.label || `Song ${index + 1}`;
+    songSelect.appendChild(option);
+  });
+
+  currentSongIndex = Math.min(
+    Math.max(Number(musicConfig.defaultSongIndex || 0), 0),
+    songs.length - 1
+  );
+  songSelect.value = String(currentSongIndex);
+
+  function loadSong(index, shouldPlay = false) {
+    const selectedSong = songs[index];
+    if (!selectedSong) return;
+
+    currentSongIndex = index;
+    musicSource.src = selectedSong.url;
+    bgMusic.load();
+
+    if (shouldPlay) {
+      bgMusic.play().then(() => {
+        musicToggleBtn.textContent = "Pause our song";
+      }).catch(() => {
+        musicToggleBtn.textContent = "Tap again to play";
+      });
+    }
+  }
+
+  loadSong(currentSongIndex, false);
+
+  songSelect.addEventListener("change", () => {
+    const nextIndex = Number(songSelect.value);
+    const shouldResume = !bgMusic.paused;
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+    loadSong(nextIndex, shouldResume);
+  });
 
   musicToggleBtn.textContent = "Play our song";
   musicToggleBtn.addEventListener("click", async () => {

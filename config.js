@@ -6,8 +6,18 @@ window.ANNIVERSARY_CONFIG = {
   favoriteLine: "Through every up and every down, we still found our way back to each other.",
   music: {
     enabled: true,
-    url: "https://res.cloudinary.com/dpkcv1sne/video/upload/v1776155816/Favorite_Girl_kk4klt.mp3",
-    volume: 0.55
+    volume: 0.55,
+    defaultSongIndex: 0,
+    songs: [
+      {
+        label: "Pag-ibig Ay Kanibalismo",
+        url: "https://res.cloudinary.com/dpkcv1sne/video/upload/q_auto/f_auto/v1776163355/Pag_ibig_ay_Kanibalismo_II_-_fitterkarma_Lyrics_miv6fe.mp3"
+      },
+      {
+        label: "Blue",
+        url: "https://res.cloudinary.com/dpkcv1sne/video/upload/q_auto/f_auto/v1776163304/Yung_Kai_-_Blue_fzkmr5.mp3"
+      }
+    ]
   },
   letterTitle: "For our first year together",
   letterBody:
