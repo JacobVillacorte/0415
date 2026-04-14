@@ -90,12 +90,28 @@
       -webkit-user-select: none;
     }
 
+    .portrait-image {
+      position: absolute;
+      inset: 0.7rem;
+      width: calc(100% - 1.4rem);
+      height: calc(100% - 1.4rem);
+      object-fit: cover;
+      object-position: center 16%;
+      filter: grayscale(1) contrast(1.08) brightness(1.03);
+      opacity: 1;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
     .portrait-shell {
       position: absolute;
       inset: 0.7rem;
       transform-origin: center center;
       will-change: transform;
       transform: translate(var(--offset-x, 0px), var(--offset-y, 0px)) scale(var(--scale, 1));
+      mix-blend-mode: screen;
+      pointer-events: none;
     }
 
     p {
@@ -110,7 +126,8 @@
       color: transparent;
       background-clip: text;
       background-image: var(--subject-image);
-      filter: brightness(var(--brightness)) grayscale(var(--grayscale)) invert(var(--invert)) contrast(1.18);
+      filter: brightness(1) grayscale(1) invert(0) contrast(1.35);
+      opacity: 0.72;
       font-family: 'Inter', sans-serif;
       font-size: var(--regular);
       line-height: var(--regular);
@@ -188,6 +205,7 @@
   <div class="page">
     <a class="back" href="index.html">Back to anniversary</a>
     <div id="portraitStage" class="portrait-stage">
+      <img class="portrait-image" src="./picjah1.png" alt="Portrait memory" />
       <div id="portraitShell" class="portrait-shell">
         <p id="text" title="Powered by CSS Text Portrait Builder">Loading portrait text...</p>
       </div>
@@ -273,7 +291,7 @@
       const maxLineY = Math.floor((stageHeight / fontSize) * (percent / 100));
       const maxCharX = Math.floor(stageWidth / (getFontTextWidthAverage(getFontDescriptors(portraitText)) - 1));
 
-      return Math.ceil(maxCharX * maxLineY * Math.max(1, scale));
+      return Math.ceil(maxCharX * maxLineY * Math.max(0.9, scale * 0.95));
     }
 
     function setText() {
@@ -326,6 +344,12 @@
       startOffsetY = offsetY;
       portraitStage.setPointerCapture(event.pointerId);
     });
+
+    portraitStage.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      scale = clampScale(scale + (event.deltaY < 0 ? 0.08 : -0.08));
+      rebuildPortrait();
+    }, { passive: false });
 
     portraitStage.addEventListener('pointermove', (event) => {
       if (dragPointerId !== event.pointerId) {
