@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Our Anniversary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-noise" aria-hidden="true"></div>
+
+  <header class="hero section reveal">
+    <p class="eyebrow">For my favorite person</p>
+    <h1><span id="partnerName">My Love</span>, happy anniversary.</h1>
+    <p class="hero-copy" id="heroMessage">
+      Another year, another chapter, same heartbeat.
+    </p>
+    <div class="hero-actions">
+      <button id="playSurpriseBtn" class="btn btn-primary" type="button">Open your surprise</button>
+      <button id="spawnHeartsBtn" class="btn btn-ghost" type="button">Rain hearts</button>
+      <button id="musicToggle" class="btn btn-ghost" type="button">Play our song</button>
+    </div>
+    <audio id="bgMusic" loop>
+      <source id="musicSource" type="audio/mpeg">
+    </audio>
+  </header>
+
+  <main>
+    <section class="section stats reveal" aria-label="Anniversary stats">
+      <article class="stat-card">
+        <p class="stat-label">Together for</p>
+        <p id="daysTogether" class="stat-value">0 days</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-label">Next anniversary in</p>
+        <p id="countdown" class="stat-value">0d 0h 0m</p>
+      </article>
+      <article class="stat-card">
+        <p class="stat-label">Favorite line</p>
+        <p id="favoriteLine" class="stat-value small">You still give me butterflies.</p>
+      </article>
+    </section>
+
+    <section class="section timeline reveal" aria-label="Memory timeline">
+      <h2>Our little timeline</h2>
+      <div id="timelineList" class="timeline-list"></div>
+    </section>
+
+    <section class="section reasons reveal" aria-label="Reasons I love you">
+      <h2>Reasons I love you</h2>
+      <article class="reason-card" id="reasonCard">
+        <p class="reason-tag">Reason <span id="reasonIndex">1</span></p>
+        <p class="reason-text" id="reasonText">You make ordinary moments feel cinematic.</p>
+      </article>
+      <div class="reason-actions">
+        <button id="prevReasonBtn" class="btn btn-ghost" type="button">Previous</button>
+        <button id="nextReasonBtn" class="btn btn-primary" type="button">Next</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="surpriseModal" class="surprise-modal">
+    <div class="modal-inner">
+      <p class="modal-kicker">A note for you</p>
+      <h3 id="letterTitle">To the one who changed everything</h3>
+      <p id="letterBody"></p>
+      <button id="closeModalBtn" class="btn btn-primary" type="button">Close</button>
+    </div>
+  </dialog>
+
+  <canvas id="heartsCanvas" aria-hidden="true"></canvas>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
