@@ -39,6 +39,8 @@
 
     body {
       font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     body,
@@ -60,18 +62,41 @@
       backdrop-filter: blur(10px);
     }
 
+    .page {
+      min-height: 100svh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      align-items: start;
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    .portrait-stage {
+      width: min(92vw, 560px);
+      aspect-ratio: 3 / 4;
+      margin: 1rem auto 0;
+      padding: 0.7rem;
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.62);
+      position: relative;
+      overflow: hidden;
+    }
+
     p {
-      position: fixed;
-      inset: 0;
+      position: absolute;
+      inset: 0.7rem;
+      margin: 0;
       padding: 0;
-      background-attachment: fixed;
-      background-position: center 18%;
+      background-attachment: scroll;
+      background-position: center 22%;
       background-repeat: no-repeat;
       background-size: cover;
       color: transparent;
       background-clip: text;
       background-image: var(--subject-image);
-      filter: brightness(var(--brightness)) grayscale(var(--grayscale)) invert(var(--invert)) contrast(1.15);
+      filter: brightness(var(--brightness)) grayscale(var(--grayscale)) invert(var(--invert)) contrast(1.18);
       font-family: 'Inter', sans-serif;
       font-size: var(--regular);
       line-height: var(--regular);
@@ -85,7 +110,18 @@
 
     @media (max-width: 720px) {
       :root {
-        --regular: 8px;
+        --regular: 5.4px;
+      }
+
+      .page {
+        padding: 0.85rem;
+      }
+
+      .portrait-stage {
+        width: min(94vw, 100%);
+        margin-top: 0.9rem;
+        padding: 0.55rem;
+        border-radius: 24px;
       }
 
       .back {
@@ -97,12 +133,17 @@
   </style>
 </head>
 <body>
-  <a class="back" href="index.html">Back to anniversary</a>
-  <p id="text" title="Powered by CSS Text Portrait Builder">Loading portrait text...</p>
+  <div class="page">
+    <a class="back" href="index.html">Back to anniversary</a>
+    <div id="portraitStage" class="portrait-stage">
+      <p id="text" title="Powered by CSS Text Portrait Builder">Loading portrait text...</p>
+    </div>
+  </div>
 
   <script src="config.js"></script>
   <script>
     const portraitText = document.getElementById('text');
+    const portraitStage = document.getElementById('portraitStage');
     const portraitTextSource = (
       (window.ANNIVERSARY_CONFIG && window.ANNIVERSARY_CONFIG.portraitText) ||
       'I love you I love you I love you I love you I love you I love you I love you'
@@ -151,8 +192,10 @@
       }
 
       const fontSize = parseInt(getStyle(portraitText, 'font-size').match(/\d+/)[0], 10);
-      const maxLineY = Math.floor((window.innerHeight / fontSize) * (percent / 100));
-      const maxCharX = Math.floor(window.innerWidth / (getFontTextWidthAverage(getFontDescriptors(portraitText)) - 1));
+      const stageWidth = portraitStage.clientWidth || window.innerWidth;
+      const stageHeight = portraitStage.clientHeight || window.innerHeight;
+      const maxLineY = Math.floor((stageHeight / fontSize) * (percent / 100));
+      const maxCharX = Math.floor(stageWidth / (getFontTextWidthAverage(getFontDescriptors(portraitText)) - 1));
 
       return Math.ceil(maxCharX * maxLineY);
     }
