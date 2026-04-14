@@ -16,7 +16,6 @@
       --subject-image: url('./picjah1.png');
       --black: #070707;
       --regular: 11px;
-      --text-zoom: 1;
       --brightness: 0.95;
       --grayscale: 1;
       --invert: 0;
@@ -91,27 +90,12 @@
       -webkit-user-select: none;
     }
 
-    .portrait-image {
-      position: absolute;
-      inset: 0.7rem;
-      width: calc(100% - 1.4rem);
-      height: calc(100% - 1.4rem);
-      object-fit: cover;
-      object-position: center 16%;
-      filter: grayscale(1) contrast(1.08) brightness(1.04);
-      pointer-events: none;
-      user-select: none;
-      -webkit-user-select: none;
-      z-index: 0;
-    }
-
     .portrait-shell {
       position: absolute;
       inset: 0.7rem;
       transform-origin: center center;
       will-change: transform;
-      transform: translate(var(--offset-x, 0px), var(--offset-y, 0px));
-      z-index: 1;
+      transform: translate(var(--offset-x, 0px), var(--offset-y, 0px)) scale(var(--scale, 1));
     }
 
     p {
@@ -126,11 +110,10 @@
       color: transparent;
       background-clip: text;
       background-image: var(--subject-image);
-      filter: brightness(1) grayscale(1) contrast(1.28);
-      opacity: 0.76;
+      filter: brightness(var(--brightness)) grayscale(var(--grayscale)) invert(var(--invert)) contrast(1.18);
       font-family: 'Inter', sans-serif;
-      font-size: calc(var(--regular) * var(--text-zoom));
-      line-height: calc(var(--regular) * var(--text-zoom));
+      font-size: var(--regular);
+      line-height: var(--regular);
       text-align: justify;
       -webkit-text-fill-color: transparent;
       -webkit-background-clip: text;
@@ -171,7 +154,7 @@
 
     @media (max-width: 720px) {
       :root {
-        --regular: 5.2px;
+        --regular: 5px;
       }
 
       .page {
@@ -182,12 +165,6 @@
         width: min(94vw, 100%);
         padding: 0.55rem;
         border-radius: 24px;
-      }
-
-      .portrait-image {
-        inset: 0.55rem;
-        width: calc(100% - 1.1rem);
-        height: calc(100% - 1.1rem);
       }
 
       .portrait-shell {
@@ -210,7 +187,6 @@
   <div class="page">
     <a class="back" href="index.html">Back to anniversary</a>
     <div id="portraitStage" class="portrait-stage">
-      <img class="portrait-image" src="./picjah1.png" alt="Portrait memory" />
       <div id="portraitShell" class="portrait-shell">
         <p id="text" title="Powered by CSS Text Portrait Builder">Loading portrait text...</p>
       </div>
@@ -398,7 +374,7 @@
     function applyTransform() {
       offsetX = clampOffset(offsetX, 'x');
       offsetY = clampOffset(offsetY, 'y');
-      portraitText.style.setProperty('--text-zoom', String(scale));
+      portraitShell.style.setProperty('--scale', String(scale));
       portraitShell.style.setProperty('--offset-x', `${offsetX}px`);
       portraitShell.style.setProperty('--offset-y', `${offsetY}px`);
       zoomRange.value = String(scale);
