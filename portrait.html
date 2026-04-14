@@ -141,7 +141,7 @@
       overflow-wrap: anywhere;
       color: transparent;
       -webkit-text-fill-color: transparent;
-      background-image: url("picjah1.png");
+      background-image: url("./picjah1.png");
       background-position: center;
       background-repeat: no-repeat;
       background-size: cover;
@@ -214,9 +214,7 @@
     <div class="portrait-stage">
       <div id="portraitWrap" class="portrait-wrap">
         <div id="textLayer" class="text-layer" aria-label="Portrait memory">
-            <p id="portraitText" class="portrait-text">
-              i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you
-            </p>
+            <p id="portraitText" class="portrait-text">Loading portrait text...</p>
         </div>
       </div>
     </div>
@@ -242,7 +240,7 @@
     const resetBtn = document.getElementById('resetBtn');
     const qualityToggleBtn = document.getElementById('qualityToggleBtn');
 
-    const imagePath = 'picjah1.png';
+    const imagePath = './picjah1.png';
     const portraitTextSource = (
       (window.ANNIVERSARY_CONFIG && window.ANNIVERSARY_CONFIG.portraitText) ||
       'i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you'
@@ -262,15 +260,41 @@
     let pinchStartDistance = 0;
     let pinchStartScale = 1;
 
-    function buildText() {
-      const targetChars = ultraMode ? 900000 : 650000;
-      let output = '';
-      const chunk = `${portraitTextSource} `;
-      while (output.length < targetChars) {
-        output += chunk;
+    function getTextWidth(text, font) {
+      const measureCanvas = getTextWidth.canvas || (getTextWidth.canvas = document.createElement('canvas'));
+      const context = measureCanvas.getContext('2d');
+      context.font = font;
+      return context.measureText(text).width;
+    }
+
+    function getFontAverageWidth(font) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ .,!?';
+      let total = 0;
+      for (const char of chars) {
+        total += getTextWidth(char, font);
       }
-      portraitText.textContent = output;
+      return Math.max(1, total / chars.length);
+    }
+
+    function computeMaxChar() {
+      const styles = window.getComputedStyle(portraitText);
+      const fontSize = parseFloat(styles.fontSize || '10');
+      const font = `${styles.fontWeight} ${styles.fontSize} ${styles.fontFamily}`;
+      const avgWidth = getFontAverageWidth(font);
+      const width = textLayer.clientWidth;
+      const height = textLayer.clientHeight;
+      const columns = Math.max(1, Math.floor(width / avgWidth));
+      const rows = Math.max(1, Math.floor(height / fontSize));
+      return columns * rows;
+    }
+
+    function buildText() {
       portraitText.classList.toggle('ultra', ultraMode);
+
+      const source = `${portraitTextSource} `;
+      const maxChar = computeMaxChar();
+      const repeatCount = Math.max(2, Math.ceil((maxChar * 2.8) / source.length));
+      portraitText.textContent = source.repeat(repeatCount).slice(0, Math.ceil(maxChar * 2.8));
     }
 
     function applyTransform() {
@@ -412,6 +436,8 @@
       resetView();
     };
     previewImage.src = imagePath;
+
+    window.addEventListener('resize', buildText);
   </script>
 </body>
 </html>
