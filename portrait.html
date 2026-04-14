@@ -8,12 +8,12 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg-1: #17050a;
-      --bg-2: #3d0d17;
-      --bg-3: #7e2031;
-      --ink: #fff0e8;
-      --soft: #f6cfc5;
-      --accent: #ff9b8d;
+      --bg-1: #050505;
+      --bg-2: #121212;
+      --bg-3: #2a2a2a;
+      --ink: #f2f2f2;
+      --soft: #cfcfcf;
+      --accent: #ffffff;
     }
 
     * { box-sizing: border-box; }
@@ -24,8 +24,8 @@
       font-family: Georgia, serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at 20% 15%, rgba(255, 150, 145, 0.18), transparent 30%),
-        radial-gradient(circle at 80% 20%, rgba(255, 206, 188, 0.12), transparent 28%),
+        radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.08), transparent 30%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.06), transparent 28%),
         linear-gradient(160deg, var(--bg-1), var(--bg-2) 48%, var(--bg-3));
       overflow: hidden;
     }
@@ -58,8 +58,8 @@
     .back {
       color: var(--ink);
       text-decoration: none;
-      border: 1px solid rgba(255, 240, 232, 0.28);
-      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.05);
       padding: 0.6rem 1rem;
       border-radius: 999px;
     }
@@ -72,6 +72,10 @@
       color: var(--soft);
     }
 
+    .subtle {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
     .portrait-stage {
       width: min(960px, 100%);
       margin: 0 auto;
@@ -79,9 +83,9 @@
       place-items: center;
       overflow: hidden;
       border-radius: 28px;
-      border: 1px solid rgba(255, 240, 232, 0.18);
-      background: rgba(255, 230, 216, 0.06);
-      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.03);
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.62);
       position: relative;
     }
 
@@ -105,6 +109,40 @@
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
+      cursor: grab;
+    }
+
+    .portrait-wrap:active {
+      cursor: grabbing;
+    }
+
+    .word-grid {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(10, 1fr);
+      gap: 0;
+      padding: 1rem;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.92;
+      mix-blend-mode: screen;
+    }
+
+    .word-grid span {
+      display: grid;
+      place-items: center;
+      font-family: "Times New Roman", Georgia, serif;
+      font-size: clamp(0.72rem, 1.8vw, 1.1rem);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.72);
+      text-shadow: 0 0 1px rgba(0, 0, 0, 0.95);
+      -webkit-text-stroke: 0.35px rgba(0, 0, 0, 0.75);
+      transform: rotate(var(--rotate, 0deg)) scale(var(--scale, 1));
+      opacity: var(--alpha, 0.5);
+      white-space: nowrap;
     }
 
     .portrait-wrap img {
@@ -114,7 +152,10 @@
       transform: scale(1);
       transform-origin: center center;
       transition: transform 120ms ease;
-      filter: contrast(1.05) saturate(0.9) brightness(1.02);
+      filter: grayscale(1) contrast(1.28) brightness(1.08);
+      mix-blend-mode: lighten;
+      position: relative;
+      z-index: 2;
     }
 
     .ink-overlay {
@@ -123,7 +164,7 @@
       padding: 1rem 1.2rem 1.3rem;
       text-align: center;
       z-index: 3;
-      background: linear-gradient(to top, rgba(12, 2, 5, 0.78), transparent);
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
     }
 
     .ink-overlay span {
@@ -132,8 +173,8 @@
       line-height: 0.9;
       letter-spacing: 0.06em;
       color: transparent;
-      -webkit-text-stroke: 1.4px rgba(255, 240, 232, 0.85);
-      text-shadow: 0 0 8px rgba(255, 170, 161, 0.18);
+      -webkit-text-stroke: 1.4px rgba(255, 255, 255, 0.92);
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.12);
       font-weight: 700;
     }
 
@@ -155,9 +196,9 @@
     }
 
     .controls button {
-      border: 1px solid rgba(255, 240, 232, 0.24);
+      border: 1px solid rgba(255, 255, 255, 0.22);
       color: var(--ink);
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.06);
       padding: 0.65rem 1rem;
       border-radius: 999px;
       cursor: pointer;
@@ -173,7 +214,7 @@
     .hint {
       margin: 0;
       text-align: center;
-      color: rgba(246, 207, 197, 0.78);
+      color: rgba(255, 255, 255, 0.62);
       font-size: 0.92rem;
     }
 
@@ -194,6 +235,7 @@
 
     <div class="portrait-stage">
       <div id="portraitWrap" class="portrait-wrap">
+        <div id="wordGrid" class="word-grid" aria-hidden="true"></div>
         <img id="portraitImage" src="picjah1.png" alt="Portrait memory" />
         <div class="ink-overlay" aria-hidden="true"><span>I LOVE YOU</span></div>
       </div>
@@ -211,24 +253,43 @@
   <script>
     const wrap = document.getElementById('portraitWrap');
     const img = document.getElementById('portraitImage');
+    const wordGrid = document.getElementById('wordGrid');
     const zoomRange = document.getElementById('zoomRange');
     const zoomInBtn = document.getElementById('zoomInBtn');
     const zoomOutBtn = document.getElementById('zoomOutBtn');
     const resetBtn = document.getElementById('resetBtn');
 
+    const words = Array.from({ length: 80 }, (_, index) => index);
     let scale = 1;
     let offsetX = 0;
     let offsetY = 0;
+    let activePointers = new Map();
+    let dragPointerId = null;
     let panStartX = 0;
     let panStartY = 0;
     let originOffsetX = 0;
     let originOffsetY = 0;
-    let panning = false;
     let pinchStartDistance = 0;
     let pinchStartScale = 1;
 
+    function buildWordGrid() {
+      wordGrid.innerHTML = '';
+      words.forEach((value) => {
+        const word = document.createElement('span');
+        const rotation = ((value % 9) - 4) * 2;
+        const size = 0.85 + (value % 6) * 0.08;
+        const alpha = 0.18 + (value % 8) * 0.07;
+        word.textContent = 'I LOVE YOU';
+        word.style.setProperty('--rotate', `${rotation}deg`);
+        word.style.setProperty('--scale', String(size));
+        word.style.setProperty('--alpha', String(alpha));
+        wordGrid.appendChild(word);
+      });
+    }
+
     function applyTransform() {
       img.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+      wordGrid.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
       zoomRange.value = String(scale);
     }
 
@@ -260,28 +321,85 @@
 
     resetBtn.addEventListener('click', resetView);
 
-    wrap.addEventListener('pointerdown', (event) => {
-      panning = true;
-      panStartX = event.clientX;
-      panStartY = event.clientY;
+    function setDragOrigin(pointerId, x, y) {
+      dragPointerId = pointerId;
+      panStartX = x;
+      panStartY = y;
       originOffsetX = offsetX;
       originOffsetY = offsetY;
-      wrap.setPointerCapture(event.pointerId);
+    }
+
+    function updateFromPointers() {
+      if (activePointers.size === 1 && dragPointerId !== null) {
+        const point = activePointers.get(dragPointerId);
+        if (!point) return;
+        offsetX = originOffsetX + (point.x - panStartX);
+        offsetY = originOffsetY + (point.y - panStartY);
+        applyTransform();
+        return;
+      }
+
+      if (activePointers.size >= 2) {
+        const points = Array.from(activePointers.values());
+        const distance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+        if (!pinchStartDistance) {
+          pinchStartDistance = distance;
+          pinchStartScale = scale;
+        }
+        scale = clampScale(pinchStartScale * (distance / pinchStartDistance));
+        applyTransform();
+      }
+    }
+
+    wrap.addEventListener('pointerdown', (event) => {
+      activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      if (activePointers.size === 1) {
+        setDragOrigin(event.pointerId, event.clientX, event.clientY);
+        wrap.setPointerCapture(event.pointerId);
+      }
+
+      if (activePointers.size === 2) {
+        const points = Array.from(activePointers.values());
+        pinchStartDistance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+        pinchStartScale = scale;
+      }
     });
 
     wrap.addEventListener('pointermove', (event) => {
-      if (!panning || event.pointerType === 'touch') return;
-      offsetX = originOffsetX + (event.clientX - panStartX);
-      offsetY = originOffsetY + (event.clientY - panStartY);
-      applyTransform();
+      const point = activePointers.get(event.pointerId);
+      if (!point) return;
+      point.x = event.clientX;
+      point.y = event.clientY;
+      activePointers.set(event.pointerId, point);
+      updateFromPointers();
     });
 
-    wrap.addEventListener('pointerup', () => {
-      panning = false;
+    wrap.addEventListener('pointerup', (event) => {
+      activePointers.delete(event.pointerId);
+      if (activePointers.size === 1) {
+        const remaining = Array.from(activePointers.entries())[0];
+        if (remaining) {
+          dragPointerId = remaining[0];
+          panStartX = remaining[1].x;
+          panStartY = remaining[1].y;
+          originOffsetX = offsetX;
+          originOffsetY = offsetY;
+        }
+      } else if (activePointers.size === 0) {
+        dragPointerId = null;
+        pinchStartDistance = 0;
+        pinchStartScale = 1;
+      }
     });
 
-    wrap.addEventListener('pointercancel', () => {
-      panning = false;
+    wrap.addEventListener('pointercancel', (event) => {
+      activePointers.delete(event.pointerId);
+      if (activePointers.size === 0) {
+        dragPointerId = null;
+        pinchStartDistance = 0;
+        pinchStartScale = 1;
+      }
     });
 
     wrap.addEventListener('wheel', (event) => {
@@ -290,26 +408,7 @@
       applyTransform();
     }, { passive: false });
 
-    function distance(touchA, touchB) {
-      return Math.hypot(touchA.clientX - touchB.clientX, touchA.clientY - touchB.clientY);
-    }
-
-    wrap.addEventListener('touchstart', (event) => {
-      if (event.touches.length === 2) {
-        pinchStartDistance = distance(event.touches[0], event.touches[1]);
-        pinchStartScale = scale;
-      }
-    }, { passive: true });
-
-    wrap.addEventListener('touchmove', (event) => {
-      if (event.touches.length === 2) {
-        event.preventDefault();
-        const pinchDistance = distance(event.touches[0], event.touches[1]);
-        scale = clampScale(pinchStartScale * (pinchDistance / pinchStartDistance));
-        applyTransform();
-      }
-    }, { passive: false });
-
+    buildWordGrid();
     resetView();
   </script>
 </body>

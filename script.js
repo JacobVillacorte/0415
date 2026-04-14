@@ -40,6 +40,7 @@ let currentScreen = 0;
 let startX = 0;
 let startY = 0;
 let hasTouchStart = false;
+let scrollRaf = 0;
 
 const screens = Array.from(document.querySelectorAll(".screen"));
 let screenDots = [];
@@ -148,7 +149,12 @@ function updateTimeStats() {
 
 function goToScreen(index) {
   const bounded = Math.max(0, Math.min(index, screens.length - 1));
-  currentScreen = bounded;
+  setScreenState(bounded);
+  screens[currentScreen].scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function setScreenState(index) {
+  currentScreen = index;
 
   screens.forEach((screen, idx) => {
     screen.classList.toggle("active", idx === currentScreen);
@@ -161,8 +167,26 @@ function goToScreen(index) {
   prevScreenBtn.disabled = currentScreen === 0;
   nextScreenBtn.disabled = currentScreen === screens.length - 1;
   screenCountEl.textContent = `${currentScreen + 1} / ${screens.length}`;
+}
 
-  screens[currentScreen].scrollIntoView({ behavior: "smooth", block: "start" });
+function syncScreenToScroll() {
+  const viewportCenter = window.scrollY + window.innerHeight / 2;
+  let nearestIndex = 0;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+
+  screens.forEach((screen, index) => {
+    const screenCenter = screen.offsetTop + screen.offsetHeight / 2;
+    const distance = Math.abs(screenCenter - viewportCenter);
+
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = index;
+    }
+  });
+
+  if (nearestIndex !== currentScreen) {
+    setScreenState(nearestIndex);
+  }
 }
 
 function setupScreens() {
@@ -180,6 +204,17 @@ function setupScreens() {
 
   prevScreenBtn.addEventListener("click", () => goToScreen(currentScreen - 1));
   nextScreenBtn.addEventListener("click", () => goToScreen(currentScreen + 1));
+
+  window.addEventListener("scroll", () => {
+    if (scrollRaf) {
+      return;
+    }
+
+    scrollRaf = window.requestAnimationFrame(() => {
+      scrollRaf = 0;
+      syncScreenToScroll();
+    });
+  }, { passive: true });
 
   window.addEventListener("keydown", (event) => {
     if (event.key === "ArrowLeft") {
@@ -229,7 +264,7 @@ function setupScreens() {
     { passive: true }
   );
 
-  goToScreen(0);
+  setScreenState(0);
 }
 
 function setupMusic() {
