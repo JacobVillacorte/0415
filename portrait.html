@@ -166,7 +166,6 @@
     @media (max-width: 720px) {
       .frame { padding: 0.8rem; }
       .portrait-wrap { min-height: 60svh; }
-      .ink-overlay span { font-size: clamp(1.75rem, 10vw, 3.2rem); }
     }
   </style>
 </head>
@@ -190,9 +189,10 @@
       <button id="zoomInBtn" type="button">Zoom in</button>
       <button id="resetBtn" type="button">Reset</button>
     </div>
-    <p class="hint">Text-only portrait: every detail is built from repeated "I love you".</p>
+    <p class="hint">Text-only portrait from your photo: zoom in to see the words, zoom out to see the face.</p>
   </div>
 
+  <script src="config.js"></script>
   <script>
     const wrap = document.getElementById('portraitWrap');
     const canvas = document.getElementById('portraitCanvas');
@@ -203,6 +203,11 @@
     const resetBtn = document.getElementById('resetBtn');
     const source = new Image();
     source.src = 'picjah1.png';
+
+    const textSource = (
+      (window.ANNIVERSARY_CONFIG && window.ANNIVERSARY_CONFIG.portraitText) ||
+      'I love you I love you I love you I love you I love you I love you '
+    ).replace(/\s+/g, ' ').trim() + ' ';
 
     let scale = 1;
     let offsetX = 0;
@@ -254,10 +259,11 @@
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, width, height);
 
-      const baseCell = Math.max(7, Math.min(width, height) / 40);
-      const cellSize = baseCell / scale;
-      const columns = Math.ceil(width / cellSize) + 2;
-      const rows = Math.ceil(height / cellSize) + 2;
+      const fontSize = Math.max(5.5, Math.min(width, height) / 88) / scale;
+      const charW = fontSize * 0.62;
+      const lineH = fontSize * 1.05;
+      const columns = Math.ceil(width / charW) + 2;
+      const rows = Math.ceil(height / lineH) + 2;
 
       const sampleCanvas = document.createElement('canvas');
       sampleCanvas.width = columns;
@@ -283,11 +289,13 @@
 
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      ctx.font = `700 ${fontSize}px Consolas`;
 
       const centerX = width / 2 + offsetX;
       const centerY = height / 2 + offsetY;
-      const sourceLeft = centerX - (columns * cellSize) / 2;
-      const sourceTop = centerY - (rows * cellSize) / 2;
+      const sourceLeft = centerX - (columns * charW) / 2;
+      const sourceTop = centerY - (rows * lineH) / 2;
+      let pointer = 0;
 
       for (let y = 0; y < rows; y += 1) {
         for (let x = 0; x < columns; x += 1) {
@@ -296,31 +304,33 @@
           const green = pixels[index + 1];
           const blue = pixels[index + 2];
           const brightness = (red + green + blue) / 3;
-          const darkness = 1 - brightness / 255;
+          const darkness = Math.pow(1 - brightness / 255, 1.15);
+          const ch = textSource[pointer % textSource.length];
+          pointer += 1;
 
-          if (darkness < 0.08) {
+          const drawX = sourceLeft + x * charW;
+          const drawY = sourceTop + y * lineH;
+
+          // Highlights keep wider spacing; shadows use denser overlap.
+          const skip = darkness < 0.24 && ((x + y) % 3 !== 0);
+          if (skip) {
             continue;
           }
 
-          const spacingStep = darkness > 0.72 ? 1 : darkness > 0.45 ? 2 : 3;
-          if ((x + y) % spacingStep !== 0) {
-            continue;
-          }
-
-          const wordOpacity = Math.min(1, 0.14 + darkness * 0.96);
-          const wordSize = cellSize * (0.56 + darkness * 0.82);
-          const drawX = sourceLeft + x * cellSize;
-          const drawY = sourceTop + y * cellSize;
-
-          ctx.font = `700 ${wordSize}px Consolas`;
-          ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.96, 0.12 + wordOpacity * 0.95)})`;
+          const alpha = Math.min(1, 0.08 + darkness * 1.2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
           ctx.shadowColor = 'rgba(0, 0, 0, 0.98)';
-          ctx.shadowBlur = Math.max(0, wordSize * 0.06);
+          ctx.shadowBlur = Math.max(0, fontSize * 0.08);
+          ctx.fillText(ch, drawX, drawY);
 
-          const drawRepeats = darkness > 0.82 ? 3 : darkness > 0.58 ? 2 : 1;
-          for (let repeat = 0; repeat < drawRepeats; repeat += 1) {
-            const shiftY = (repeat - (drawRepeats - 1) / 2) * wordSize * 0.34;
-            ctx.fillText('I love you', drawX, drawY + shiftY);
+          if (darkness > 0.58 && ch !== ' ') {
+            ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.12)})`;
+            ctx.fillText(ch, drawX + charW * 0.22, drawY);
+          }
+
+          if (darkness > 0.78 && ch !== ' ') {
+            ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.2)})`;
+            ctx.fillText(ch, drawX - charW * 0.14, drawY + lineH * 0.16);
           }
         }
       }

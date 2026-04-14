@@ -26,6 +26,8 @@ window.ANNIVERSARY_CONFIG = {
   letterTitle: "For our first year together",
   letterBody:
     "Happy first anniversary, my love. We had lights of ups and downs, hard talks, and moments that tested us, but we fought for us. Thank you for staying, growing, and loving me through everything. I want us to keep healing, keep building, and keep becoming better together, one soft day at a time.",
+  portraitText:
+    "I love you I love you I love you I love you I love you I love you",
   memoryWish:
     "I love every sponty trip and date with you, and I am hoping we can take more pictures and make more memories soon.",
   photos: [
