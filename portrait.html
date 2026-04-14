@@ -185,7 +185,7 @@
 
     <div class="controls" aria-label="Portrait controls">
       <button id="zoomOutBtn" type="button">Zoom out</button>
-      <input id="zoomRange" type="range" min="0.8" max="2.4" step="0.01" value="1" aria-label="Zoom level" />
+      <input id="zoomRange" type="range" min="0.7" max="7" step="0.01" value="1" aria-label="Zoom level" />
       <button id="zoomInBtn" type="button">Zoom in</button>
       <button id="resetBtn" type="button">Reset</button>
       <button id="qualityToggleBtn" type="button">Quality: Standard</button>
@@ -281,7 +281,10 @@
       const left = width / 2 - drawW / 2 + offsetX;
       const top = height / 2 - drawH / 2 + offsetY;
       const baseSize = ultraMode ? 3.9 : 4.6;
-      const fontSize = Math.max(baseSize, Math.min(width, height) / (ultraMode ? 110 : 96)) / Math.max(0.7, scale * (ultraMode ? 0.91 : 0.84));
+      const zoomReveal = Math.max(0, Math.min(1, (scale - 1) / 2.8));
+      const baseFont = Math.max(baseSize, Math.min(width, height) / (ultraMode ? 112 : 100));
+      // Bigger text on zoom-in, smaller text on zoom-out.
+      const fontSize = baseFont * Math.pow(scale, ultraMode ? 0.78 : 0.74);
       const lineH = fontSize * 1.08;
       const rows = Math.ceil(height / lineH) + 3;
 
@@ -326,7 +329,7 @@
           pointer += 1;
 
           // Keep the horizontal paragraph/code flow while controlling apparent density via alpha.
-          const alpha = 0.02 + darkness * 0.98;
+          const alpha = (0.02 + darkness * 0.98) * (1 - zoomReveal * 0.22);
           if (alpha < 0.04) {
             drawX += wordW * 0.9;
             continue;
@@ -335,17 +338,18 @@
           ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha)})`;
           ctx.fillText(word, drawX, drawY);
 
-          if (darkness > (ultraMode ? 0.56 : 0.62)) {
+          if (zoomReveal < 0.62 && darkness > (ultraMode ? 0.56 : 0.62)) {
             ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.16)})`;
             ctx.fillText(word, drawX + wordW * 0.24, drawY);
           }
 
-          if (darkness > (ultraMode ? 0.78 : 0.84)) {
+          if (zoomReveal < 0.45 && darkness > (ultraMode ? 0.78 : 0.84)) {
             ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.24)})`;
             ctx.fillText(word, drawX - wordW * 0.16, drawY + lineH * 0.1);
           }
 
-          const spacing = darkness > 0.76 ? 0.18 : darkness > 0.45 ? 0.4 : 0.82;
+          const spacingBase = darkness > 0.76 ? 0.18 : darkness > 0.45 ? 0.4 : 0.82;
+          const spacing = spacingBase + zoomReveal * 0.55;
           drawX += wordW + wordW * spacing;
         }
       }
