@@ -27,7 +27,6 @@ const nextReasonBtn = document.getElementById("nextReasonBtn");
 const prevReasonBtn = document.getElementById("prevReasonBtn");
 const spawnHeartsBtn = document.getElementById("spawnHeartsBtn");
 const musicToggleBtn = document.getElementById("musicToggle");
-const songSelect = document.getElementById("songSelect");
 
 const bgMusic = document.getElementById("bgMusic");
 const musicSource = document.getElementById("musicSource");
@@ -275,65 +274,52 @@ function setupMusic() {
 
   if (!musicConfig.enabled || !songs.length) {
     musicToggleBtn.style.display = "none";
-    songSelect.style.display = "none";
     return;
   }
 
   bgMusic.volume = typeof musicConfig.volume === "number" ? musicConfig.volume : 0.55;
-  songSelect.innerHTML = "";
-
-  songs.forEach((song, index) => {
-    const option = document.createElement("option");
-    option.value = String(index);
-    option.textContent = song.label || `Song ${index + 1}`;
-    songSelect.appendChild(option);
-  });
 
   currentSongIndex = Math.min(
     Math.max(Number(musicConfig.defaultSongIndex || 0), 0),
     songs.length - 1
   );
-  songSelect.value = String(currentSongIndex);
 
-  function loadSong(index, shouldPlay = false) {
+  function loadSong(index) {
     const selectedSong = songs[index];
     if (!selectedSong) return;
 
     currentSongIndex = index;
     musicSource.src = selectedSong.url;
     bgMusic.load();
-
-    if (shouldPlay) {
-      bgMusic.play().then(() => {
-        musicToggleBtn.textContent = "Pause our song";
-      }).catch(() => {
-        musicToggleBtn.textContent = "Tap again to play";
-      });
-    }
   }
 
-  loadSong(currentSongIndex, false);
+  function getRandomSongIndex() {
+    if (songs.length <= 1) {
+      return 0;
+    }
 
-  songSelect.addEventListener("change", () => {
-    const nextIndex = Number(songSelect.value);
-    const shouldResume = !bgMusic.paused;
-    bgMusic.pause();
-    bgMusic.currentTime = 0;
-    loadSong(nextIndex, shouldResume);
-  });
+    let nextIndex = Math.floor(Math.random() * songs.length);
+    while (nextIndex === currentSongIndex) {
+      nextIndex = Math.floor(Math.random() * songs.length);
+    }
+    return nextIndex;
+  }
 
-  musicToggleBtn.textContent = "Play our song";
+  loadSong(currentSongIndex);
+
+  musicToggleBtn.textContent = "Play random song";
   musicToggleBtn.addEventListener("click", async () => {
     if (bgMusic.paused) {
+      loadSong(getRandomSongIndex());
       try {
         await bgMusic.play();
-        musicToggleBtn.textContent = "Pause our song";
+        musicToggleBtn.textContent = "Pause song";
       } catch (_err) {
         musicToggleBtn.textContent = "Tap again to play";
       }
     } else {
       bgMusic.pause();
-      musicToggleBtn.textContent = "Play our song";
+      musicToggleBtn.textContent = "Play random song";
     }
   });
 }

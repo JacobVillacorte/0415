@@ -10,6 +10,10 @@ window.ANNIVERSARY_CONFIG = {
     defaultSongIndex: 0,
     songs: [
       {
+        label: "Favorite Girl",
+        url: "https://res.cloudinary.com/dpkcv1sne/video/upload/v1776155816/Favorite_Girl_kk4klt.mp3"
+      },
+      {
         label: "Pag-ibig Ay Kanibalismo",
         url: "https://res.cloudinary.com/dpkcv1sne/video/upload/q_auto/f_auto/v1776163355/Pag_ibig_ay_Kanibalismo_II_-_fitterkarma_Lyrics_miv6fe.mp3"
       },
