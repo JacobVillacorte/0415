@@ -188,6 +188,7 @@
       <input id="zoomRange" type="range" min="0.8" max="2.4" step="0.01" value="1" aria-label="Zoom level" />
       <button id="zoomInBtn" type="button">Zoom in</button>
       <button id="resetBtn" type="button">Reset</button>
+      <button id="qualityToggleBtn" type="button">Quality: Standard</button>
     </div>
     <p class="hint">Text-only portrait from your photo: zoom in to see the words, zoom out to see the face.</p>
   </div>
@@ -201,6 +202,7 @@
     const zoomInBtn = document.getElementById('zoomInBtn');
     const zoomOutBtn = document.getElementById('zoomOutBtn');
     const resetBtn = document.getElementById('resetBtn');
+    const qualityToggleBtn = document.getElementById('qualityToggleBtn');
     const source = new Image();
     source.src = 'picjah1.png';
     const lyricText = (
@@ -223,9 +225,11 @@
     let renderQueued = false;
     let imageReady = false;
     let grayPixels = null;
+    let edgePixels = null;
     let grayWidth = 0;
     let grayHeight = 0;
     let imageRatio = 1;
+    let ultraMode = false;
 
     function resizeCanvas() {
       const rect = wrap.getBoundingClientRect();
@@ -276,7 +280,8 @@
 
       const left = width / 2 - drawW / 2 + offsetX;
       const top = height / 2 - drawH / 2 + offsetY;
-      const fontSize = Math.max(4.2, Math.min(width, height) / 100) / Math.max(0.7, scale * 0.86);
+      const baseSize = ultraMode ? 3.9 : 4.6;
+      const fontSize = Math.max(baseSize, Math.min(width, height) / (ultraMode ? 110 : 96)) / Math.max(0.7, scale * (ultraMode ? 0.91 : 0.84));
       const lineH = fontSize * 1.08;
       const rows = Math.ceil(height / lineH) + 3;
 
@@ -313,7 +318,9 @@
           const sx = Math.min(grayWidth - 1, Math.max(0, Math.floor(px * grayWidth)));
           const sy = Math.min(grayHeight - 1, Math.max(0, Math.floor(py * grayHeight)));
           const lum = grayPixels[sy * grayWidth + sx] / 255;
-          const darkness = Math.min(1, Math.max(0, Math.pow(1 - lum, 1.34)));
+          const baseDarkness = Math.min(1, Math.max(0, Math.pow(1 - lum, ultraMode ? 1.42 : 1.34)));
+          const edge = edgePixels ? edgePixels[sy * grayWidth + sx] / 255 : 0;
+          const darkness = Math.min(1, baseDarkness * (ultraMode ? 0.9 : 1) + edge * (ultraMode ? 0.58 : 0.32));
           const word = lyricWords[pointer % lyricWords.length] || 'love';
           const wordW = widthCache.get(word) || ctx.measureText(word).width;
           pointer += 1;
@@ -328,24 +335,24 @@
           ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha)})`;
           ctx.fillText(word, drawX, drawY);
 
-          if (darkness > 0.62) {
+          if (darkness > (ultraMode ? 0.56 : 0.62)) {
             ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.16)})`;
             ctx.fillText(word, drawX + wordW * 0.24, drawY);
           }
 
-          if (darkness > 0.84) {
+          if (darkness > (ultraMode ? 0.78 : 0.84)) {
             ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.24)})`;
             ctx.fillText(word, drawX - wordW * 0.16, drawY + lineH * 0.1);
           }
 
-          const spacing = darkness > 0.76 ? 0.22 : darkness > 0.45 ? 0.46 : 0.86;
+          const spacing = darkness > 0.76 ? 0.18 : darkness > 0.45 ? 0.4 : 0.82;
           drawX += wordW + wordW * spacing;
         }
       }
     }
 
     function buildToneMap() {
-      const maxSide = 1500;
+      const maxSide = ultraMode ? 2000 : 1500;
       imageRatio = source.width / source.height;
       if (source.width >= source.height) {
         grayWidth = maxSide;
@@ -362,6 +369,7 @@
       sampleCtx.drawImage(source, 0, 0, grayWidth, grayHeight);
       const pixels = sampleCtx.getImageData(0, 0, grayWidth, grayHeight).data;
       grayPixels = new Uint8ClampedArray(grayWidth * grayHeight);
+      edgePixels = new Uint8ClampedArray(grayWidth * grayHeight);
 
       for (let i = 0; i < grayPixels.length; i += 1) {
         const pxIndex = i * 4;
@@ -369,6 +377,22 @@
         const green = pixels[pxIndex + 1];
         const blue = pixels[pxIndex + 2];
         grayPixels[i] = Math.round(0.299 * red + 0.587 * green + 0.114 * blue);
+      }
+
+      // Sobel-like edge map to emphasize fine facial features in ultra mode.
+      for (let y = 1; y < grayHeight - 1; y += 1) {
+        for (let x = 1; x < grayWidth - 1; x += 1) {
+          const i = y * grayWidth + x;
+          const gx =
+            -grayPixels[i - grayWidth - 1] + grayPixels[i - grayWidth + 1] +
+            -2 * grayPixels[i - 1] + 2 * grayPixels[i + 1] +
+            -grayPixels[i + grayWidth - 1] + grayPixels[i + grayWidth + 1];
+          const gy =
+            -grayPixels[i - grayWidth - 1] - 2 * grayPixels[i - grayWidth] - grayPixels[i - grayWidth + 1] +
+            grayPixels[i + grayWidth - 1] + 2 * grayPixels[i + grayWidth] + grayPixels[i + grayWidth + 1];
+          const g = Math.min(255, Math.hypot(gx, gy) * 0.32);
+          edgePixels[i] = g;
+        }
       }
     }
 
@@ -399,6 +423,15 @@
     });
 
     resetBtn.addEventListener('click', resetView);
+
+    qualityToggleBtn.addEventListener('click', () => {
+      ultraMode = !ultraMode;
+      qualityToggleBtn.textContent = ultraMode ? 'Quality: Ultra' : 'Quality: Standard';
+      if (imageReady) {
+        buildToneMap();
+        requestRender();
+      }
+    });
 
     function setDragOrigin(pointerId, x, y) {
       dragPointerId = pointerId;
