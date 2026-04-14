@@ -192,6 +192,7 @@
     <p class="hint">Text-only portrait from your photo: zoom in to see the words, zoom out to see the face.</p>
   </div>
 
+  <script src="config.js"></script>
   <script>
     const wrap = document.getElementById('portraitWrap');
     const canvas = document.getElementById('portraitCanvas');
@@ -202,7 +203,11 @@
     const resetBtn = document.getElementById('resetBtn');
     const source = new Image();
     source.src = 'picjah1.png';
-    const phrase = 'I love you';
+    const lyricText = (
+      (window.ANNIVERSARY_CONFIG && window.ANNIVERSARY_CONFIG.portraitText) ||
+      'I love you I love you I love you I love you I love you I love you'
+    ).replace(/\s+/g, ' ').trim() + ' ';
+    const lyricWords = lyricText.split(' ').filter(Boolean);
 
     let scale = 1;
     let offsetX = 0;
@@ -217,10 +222,10 @@
     let pinchStartScale = 1;
     let renderQueued = false;
     let imageReady = false;
-    let toneMap = [];
-    let mapCols = 0;
-    let mapRows = 0;
-    let mapRatio = 1;
+    let grayPixels = null;
+    let grayWidth = 0;
+    let grayHeight = 0;
+    let imageRatio = 1;
 
     function resizeCanvas() {
       const rect = wrap.getBoundingClientRect();
@@ -261,82 +266,109 @@
       const viewRatio = width / height;
       let drawW;
       let drawH;
-      if (mapRatio > viewRatio) {
+      if (imageRatio > viewRatio) {
         drawW = width * 0.94 * scale;
-        drawH = drawW / mapRatio;
+        drawH = drawW / imageRatio;
       } else {
         drawH = height * 0.9 * scale;
-        drawW = drawH * mapRatio;
+        drawW = drawH * imageRatio;
       }
 
       const left = width / 2 - drawW / 2 + offsetX;
       const top = height / 2 - drawH / 2 + offsetY;
-      const cellW = drawW / mapCols;
-      const cellH = drawH / mapRows;
-      const fontSize = Math.max(3.8, Math.min(cellW, cellH) * 0.9);
+      const fontSize = Math.max(4.2, Math.min(width, height) / 100) / Math.max(0.7, scale * 0.86);
+      const lineH = fontSize * 1.08;
+      const rows = Math.ceil(height / lineH) + 3;
 
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.font = `700 ${fontSize}px Consolas`;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
+      ctx.shadowBlur = Math.max(0.2, fontSize * 0.05);
 
-      for (let y = 0; y < mapRows; y += 1) {
-        for (let x = 0; x < mapCols; x += 1) {
-          const darkness = toneMap[y * mapCols + x];
-          const drawX = left + x * cellW;
-          const drawY = top + y * cellH;
+      // Cache text widths once per frame to keep horizontal word flow stable.
+      const widthCache = new Map();
+      lyricWords.forEach((word) => {
+        if (!widthCache.has(word)) {
+          widthCache.set(word, ctx.measureText(word).width);
+        }
+      });
 
-          // Horizontal lyric-like flow with density by luminance.
-          const spacingGate = darkness > 0.75 ? 1 : darkness > 0.45 ? 2 : 4;
-          if ((x % spacingGate) !== 0) {
+      const startX = -fontSize * 2;
+      const startY = -lineH;
+
+      let pointer = 0;
+      for (let row = 0; row < rows; row += 1) {
+        const drawY = startY + row * lineH;
+        let drawX = startX;
+
+        while (drawX < width + fontSize * 2) {
+          const px = (drawX - left) / drawW;
+          const py = (drawY - top) / drawH;
+          if (px < 0 || py < 0 || px >= 1 || py >= 1) {
+            drawX += fontSize * 2.8;
             continue;
           }
 
-          const alpha = Math.min(1, 0.08 + darkness * 1.08);
-          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.98)';
-          ctx.shadowBlur = Math.max(0, fontSize * 0.06);
-          ctx.fillText(phrase, drawX, drawY);
+          const sx = Math.min(grayWidth - 1, Math.max(0, Math.floor(px * grayWidth)));
+          const sy = Math.min(grayHeight - 1, Math.max(0, Math.floor(py * grayHeight)));
+          const lum = grayPixels[sy * grayWidth + sx] / 255;
+          const darkness = Math.min(1, Math.max(0, Math.pow(1 - lum, 1.34)));
+          const word = lyricWords[pointer % lyricWords.length] || 'love';
+          const wordW = widthCache.get(word) || ctx.measureText(word).width;
+          pointer += 1;
+
+          // Keep the horizontal paragraph/code flow while controlling apparent density via alpha.
+          const alpha = 0.02 + darkness * 0.98;
+          if (alpha < 0.04) {
+            drawX += wordW * 0.9;
+            continue;
+          }
+
+          ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha)})`;
+          ctx.fillText(word, drawX, drawY);
 
           if (darkness > 0.62) {
-            ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.12)})`;
-            ctx.fillText(phrase, drawX + cellW * 0.28, drawY);
+            ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.16)})`;
+            ctx.fillText(word, drawX + wordW * 0.24, drawY);
           }
 
-          if (darkness > 0.82) {
-            ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.2)})`;
-            ctx.fillText(phrase, drawX - cellW * 0.22, drawY + cellH * 0.12);
+          if (darkness > 0.84) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.24)})`;
+            ctx.fillText(word, drawX - wordW * 0.16, drawY + lineH * 0.1);
           }
+
+          const spacing = darkness > 0.76 ? 0.22 : darkness > 0.45 ? 0.46 : 0.86;
+          drawX += wordW + wordW * spacing;
         }
       }
     }
 
     function buildToneMap() {
-      const targetCols = 180;
-      const sourceRatio = source.width / source.height;
-      const targetRows = Math.max(120, Math.floor(targetCols / sourceRatio));
+      const maxSide = 1500;
+      imageRatio = source.width / source.height;
+      if (source.width >= source.height) {
+        grayWidth = maxSide;
+        grayHeight = Math.max(1, Math.round(maxSide / imageRatio));
+      } else {
+        grayHeight = maxSide;
+        grayWidth = Math.max(1, Math.round(maxSide * imageRatio));
+      }
 
       const sampleCanvas = document.createElement('canvas');
-      sampleCanvas.width = targetCols;
-      sampleCanvas.height = targetRows;
+      sampleCanvas.width = grayWidth;
+      sampleCanvas.height = grayHeight;
       const sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
+      sampleCtx.drawImage(source, 0, 0, grayWidth, grayHeight);
+      const pixels = sampleCtx.getImageData(0, 0, grayWidth, grayHeight).data;
+      grayPixels = new Uint8ClampedArray(grayWidth * grayHeight);
 
-      sampleCtx.drawImage(source, 0, 0, targetCols, targetRows);
-      const pixels = sampleCtx.getImageData(0, 0, targetCols, targetRows).data;
-
-      mapCols = targetCols;
-      mapRows = targetRows;
-      mapRatio = mapCols / mapRows;
-      toneMap = new Array(mapCols * mapRows);
-
-      for (let i = 0; i < toneMap.length; i += 1) {
+      for (let i = 0; i < grayPixels.length; i += 1) {
         const pxIndex = i * 4;
         const red = pixels[pxIndex];
         const green = pixels[pxIndex + 1];
         const blue = pixels[pxIndex + 2];
-        const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
-        // Contrast curve for cleaner facial structure.
-        const darkness = Math.min(1, Math.max(0, Math.pow(1 - luminance, 1.28)));
-        toneMap[i] = darkness;
+        grayPixels[i] = Math.round(0.299 * red + 0.587 * green + 0.114 * blue);
       }
     }
 
