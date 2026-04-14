@@ -8,12 +8,14 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg-1: #020202;
-      --bg-2: #0d0d0d;
-      --bg-3: #1b1b1b;
-      --ink: #f2f2f2;
+      --bg-1: #030303;
+      --bg-2: #111111;
+      --bg-3: #1f1f1f;
+      --ink: #f4f4f4;
       --soft: #cfcfcf;
       --accent: #ffffff;
+      --portrait-w: 3;
+      --portrait-h: 4;
     }
 
     * { box-sizing: border-box; }
@@ -40,8 +42,8 @@
 
     .topbar,
     .controls,
-    .caption {
-      width: min(960px, 100%);
+    .hint {
+      width: min(1000px, 100%);
       margin: 0 auto;
     }
 
@@ -72,20 +74,14 @@
       color: var(--soft);
     }
 
-    .subtle {
-      color: rgba(255, 255, 255, 0.5);
-    }
-
     .portrait-stage {
-      width: min(960px, 100%);
+      width: min(1000px, 100%);
       margin: 0 auto;
-      display: grid;
-      place-items: center;
-      overflow: hidden;
       border-radius: 28px;
       border: 1px solid rgba(255, 255, 255, 0.12);
       background: rgba(255, 255, 255, 0.03);
       box-shadow: 0 24px 50px rgba(0, 0, 0, 0.62);
+      overflow: hidden;
       position: relative;
     }
 
@@ -93,16 +89,13 @@
       content: "";
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle at 50% 50%, transparent 30%, rgba(0, 0, 0, 0.18) 100%);
+      background: radial-gradient(circle at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.18) 100%);
       pointer-events: none;
-      z-index: 2;
+      z-index: 5;
     }
 
     .portrait-wrap {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      min-height: 68svh;
+      min-height: 70svh;
       display: grid;
       place-items: center;
       overflow: hidden;
@@ -110,25 +103,58 @@
       user-select: none;
       -webkit-user-select: none;
       cursor: grab;
+      position: relative;
+      background: #000;
     }
 
     .portrait-wrap:active {
       cursor: grabbing;
     }
 
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      background: #000;
+    .text-layer {
+      width: min(92vw, 820px);
+      aspect-ratio: calc(var(--portrait-w) / var(--portrait-h));
+      overflow: hidden;
+      transform-origin: center center;
+      will-change: transform;
+      position: relative;
     }
 
-    .caption {
-      text-align: center;
-      max-width: 680px;
-      color: var(--soft);
-      font-size: clamp(1rem, 2.6vw, 1.2rem);
-      margin-top: -0.3rem;
+    .text-layer::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(to bottom, rgba(0,0,0,0.08), rgba(0,0,0,0.22)),
+        radial-gradient(circle at 50% 50%, transparent 62%, rgba(0,0,0,0.34));
+    }
+
+    .portrait-text {
+      margin: 0;
+      font-size: 10px;
+      line-height: 6.9px;
+      letter-spacing: 0;
+      text-align: justify;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      background-image: url("picjah1.png");
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      -webkit-background-clip: text;
+      background-clip: text;
+      filter: grayscale(1) contrast(1.62) brightness(1.03);
+      transform: translateZ(0);
+    }
+
+    .portrait-text.ultra {
+      font-size: 8px;
+      line-height: 5.3px;
+      filter: grayscale(1) contrast(1.78) brightness(1.02);
     }
 
     .controls {
@@ -165,7 +191,15 @@
 
     @media (max-width: 720px) {
       .frame { padding: 0.8rem; }
-      .portrait-wrap { min-height: 60svh; }
+      .portrait-wrap { min-height: 62svh; }
+      .portrait-text {
+        font-size: 8.4px;
+        line-height: 5.8px;
+      }
+      .portrait-text.ultra {
+        font-size: 7px;
+        line-height: 4.8px;
+      }
     }
   </style>
 </head>
@@ -179,7 +213,11 @@
 
     <div class="portrait-stage">
       <div id="portraitWrap" class="portrait-wrap">
-        <canvas id="portraitCanvas" aria-label="Portrait memory"></canvas>
+        <div id="textLayer" class="text-layer" aria-label="Portrait memory">
+            <p id="portraitText" class="portrait-text">
+              i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you
+            </p>
+        </div>
       </div>
     </div>
 
@@ -190,30 +228,31 @@
       <button id="resetBtn" type="button">Reset</button>
       <button id="qualityToggleBtn" type="button">Quality: Standard</button>
     </div>
-    <p class="hint">Text-only portrait from your photo: zoom in to see the words, zoom out to see the face.</p>
+    <p class="hint">Zoom out for the full photo look, zoom in to reveal repeated "I love you" text.</p>
   </div>
 
   <script src="config.js"></script>
   <script>
     const wrap = document.getElementById('portraitWrap');
-    const canvas = document.getElementById('portraitCanvas');
-    const ctx = canvas.getContext('2d');
+    const textLayer = document.getElementById('textLayer');
+    const portraitText = document.getElementById('portraitText');
     const zoomRange = document.getElementById('zoomRange');
     const zoomInBtn = document.getElementById('zoomInBtn');
     const zoomOutBtn = document.getElementById('zoomOutBtn');
     const resetBtn = document.getElementById('resetBtn');
     const qualityToggleBtn = document.getElementById('qualityToggleBtn');
-    const source = new Image();
-    source.src = 'picjah1.png';
-    const lyricText = (
+
+    const imagePath = 'picjah1.png';
+    const portraitTextSource = (
       (window.ANNIVERSARY_CONFIG && window.ANNIVERSARY_CONFIG.portraitText) ||
-      'I love you I love you I love you I love you I love you I love you'
-    ).replace(/\s+/g, ' ').trim() + ' ';
-    const lyricWords = lyricText.split(' ').filter(Boolean);
+      'i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you i love you'
+    ).replace(/\s+/g, ' ').trim();
 
     let scale = 1;
     let offsetX = 0;
     let offsetY = 0;
+    let ultraMode = false;
+
     let activePointers = new Map();
     let dragPointerId = null;
     let panStartX = 0;
@@ -222,192 +261,21 @@
     let originOffsetY = 0;
     let pinchStartDistance = 0;
     let pinchStartScale = 1;
-    let renderQueued = false;
-    let imageReady = false;
-    let grayPixels = null;
-    let edgePixels = null;
-    let grayWidth = 0;
-    let grayHeight = 0;
-    let imageRatio = 1;
-    let ultraMode = false;
 
-    function resizeCanvas() {
-      const rect = wrap.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
-      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.height}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      requestRender();
+    function buildText() {
+      const targetChars = ultraMode ? 900000 : 650000;
+      let output = '';
+      const chunk = `${portraitTextSource} `;
+      while (output.length < targetChars) {
+        output += chunk;
+      }
+      portraitText.textContent = output;
+      portraitText.classList.toggle('ultra', ultraMode);
     }
 
     function applyTransform() {
       zoomRange.value = String(scale);
-      requestRender();
-    }
-
-    function requestRender() {
-      if (renderQueued) return;
-      renderQueued = true;
-      window.requestAnimationFrame(() => {
-        renderQueued = false;
-        drawPortrait();
-      });
-    }
-
-    function drawPortrait() {
-      if (!imageReady) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const width = rect.width;
-      const height = rect.height;
-
-      ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, width, height);
-
-      const viewRatio = width / height;
-      let drawW;
-      let drawH;
-      if (imageRatio > viewRatio) {
-        drawW = width * 0.98 * scale;
-        drawH = drawW / imageRatio;
-      } else {
-        drawH = height * 0.97 * scale;
-        drawW = drawH * imageRatio;
-      }
-
-      const left = width / 2 - drawW / 2 + offsetX;
-      const top = height / 2 - drawH / 2 + offsetY;
-      const baseSize = ultraMode ? 3.9 : 4.6;
-      const zoomReveal = Math.max(0, Math.min(1, (scale - 1) / 2.8));
-      const baseFont = Math.max(baseSize, Math.min(width, height) / (ultraMode ? 210 : 178));
-      // Denser micro-text at zoom-out, progressively readable on zoom-in.
-      const fontSize = baseFont * Math.pow(scale, ultraMode ? 0.9 : 0.86);
-      const lineH = fontSize * 1.08;
-      const rows = Math.ceil(height / lineH) + 3;
-
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = `700 ${fontSize}px Consolas`;
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
-      ctx.shadowBlur = Math.max(0.2, fontSize * 0.05);
-
-      // Cache text widths once per frame to keep horizontal word flow stable.
-      const widthCache = new Map();
-      lyricWords.forEach((word) => {
-        if (!widthCache.has(word)) {
-          widthCache.set(word, ctx.measureText(word).width);
-        }
-      });
-
-      const startX = -fontSize * 2;
-      const startY = -lineH;
-
-      let pointer = 0;
-      for (let row = 0; row < rows; row += 1) {
-        const drawY = startY + row * lineH;
-        let drawX = startX;
-        // Keep line-like paragraph flow with a row offset.
-        pointer = (pointer + row * 3) % lyricWords.length;
-
-        while (drawX < width + fontSize * 2) {
-          const px = (drawX - left) / drawW;
-          const py = (drawY - top) / drawH;
-          if (px < 0 || py < 0 || px >= 1 || py >= 1) {
-            drawX += fontSize * 2.4;
-            continue;
-          }
-
-          const sx = Math.min(grayWidth - 1, Math.max(0, Math.floor(px * grayWidth)));
-          const sy = Math.min(grayHeight - 1, Math.max(0, Math.floor(py * grayHeight)));
-          const lum = grayPixels[sy * grayWidth + sx] / 255;
-          const baseDarkness = Math.min(1, Math.max(0, Math.pow(1 - lum, ultraMode ? 1.42 : 1.34)));
-          const edge = edgePixels ? edgePixels[sy * grayWidth + sx] / 255 : 0;
-          const darkness = Math.min(1, baseDarkness * (ultraMode ? 0.9 : 1) + edge * (ultraMode ? 0.58 : 0.32));
-          const word = lyricWords[pointer % lyricWords.length] || 'love';
-          const wordW = widthCache.get(word) || ctx.measureText(word).width;
-          pointer += 1;
-
-          // Strict density mapping from source luminance.
-          const alpha = (0.02 + darkness * 0.98) * (1 - zoomReveal * 0.22);
-          if (darkness < 0.08) {
-            drawX += wordW * 0.95;
-            continue;
-          }
-          if (darkness < 0.24 && ((row + Math.floor(drawX)) % 3 !== 0)) {
-            drawX += wordW * 0.9;
-            continue;
-          }
-          if (darkness < 0.45 && ((row + Math.floor(drawX)) % 2 !== 0)) {
-            drawX += wordW * 0.9;
-            continue;
-          }
-
-          ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha)})`;
-          ctx.fillText(word, drawX, drawY);
-
-          if (zoomReveal < 0.62 && darkness > (ultraMode ? 0.56 : 0.62)) {
-            ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.16)})`;
-            ctx.fillText(word, drawX + wordW * 0.24, drawY);
-          }
-
-          if (zoomReveal < 0.45 && darkness > (ultraMode ? 0.78 : 0.84)) {
-            ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha + 0.24)})`;
-            ctx.fillText(word, drawX - wordW * 0.16, drawY + lineH * 0.1);
-          }
-
-          const spacingBase = darkness > 0.78 ? 0.08 : darkness > 0.52 ? 0.24 : darkness > 0.3 ? 0.48 : 0.92;
-          const spacing = spacingBase + zoomReveal * 0.55;
-          drawX += wordW + wordW * spacing;
-        }
-      }
-    }
-
-    function buildToneMap() {
-      const maxSide = ultraMode ? 3200 : 2200;
-      imageRatio = source.width / source.height;
-      if (source.width >= source.height) {
-        grayWidth = maxSide;
-        grayHeight = Math.max(1, Math.round(maxSide / imageRatio));
-      } else {
-        grayHeight = maxSide;
-        grayWidth = Math.max(1, Math.round(maxSide * imageRatio));
-      }
-
-      const sampleCanvas = document.createElement('canvas');
-      sampleCanvas.width = grayWidth;
-      sampleCanvas.height = grayHeight;
-      const sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
-      sampleCtx.drawImage(source, 0, 0, grayWidth, grayHeight);
-      const pixels = sampleCtx.getImageData(0, 0, grayWidth, grayHeight).data;
-      grayPixels = new Uint8ClampedArray(grayWidth * grayHeight);
-      edgePixels = new Uint8ClampedArray(grayWidth * grayHeight);
-
-      for (let i = 0; i < grayPixels.length; i += 1) {
-        const pxIndex = i * 4;
-        const red = pixels[pxIndex];
-        const green = pixels[pxIndex + 1];
-        const blue = pixels[pxIndex + 2];
-        grayPixels[i] = Math.round(0.299 * red + 0.587 * green + 0.114 * blue);
-      }
-
-      // Sobel-like edge map to emphasize fine facial features in ultra mode.
-      for (let y = 1; y < grayHeight - 1; y += 1) {
-        for (let x = 1; x < grayWidth - 1; x += 1) {
-          const i = y * grayWidth + x;
-          const gx =
-            -grayPixels[i - grayWidth - 1] + grayPixels[i - grayWidth + 1] +
-            -2 * grayPixels[i - 1] + 2 * grayPixels[i + 1] +
-            -grayPixels[i + grayWidth - 1] + grayPixels[i + grayWidth + 1];
-          const gy =
-            -grayPixels[i - grayWidth - 1] - 2 * grayPixels[i - grayWidth] - grayPixels[i - grayWidth + 1] +
-            grayPixels[i + grayWidth - 1] + 2 * grayPixels[i + grayWidth] + grayPixels[i + grayWidth + 1];
-          const g = Math.min(255, Math.hypot(gx, gy) * 0.32);
-          edgePixels[i] = g;
-        }
-      }
+      textLayer.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
     }
 
     function resetView() {
@@ -420,32 +288,6 @@
     function clampScale(value) {
       return Math.min(7, Math.max(0.7, value));
     }
-
-    zoomRange.addEventListener('input', () => {
-      scale = clampScale(Number(zoomRange.value));
-      applyTransform();
-    });
-
-    zoomInBtn.addEventListener('click', () => {
-      scale = clampScale(scale + 0.12);
-      applyTransform();
-    });
-
-    zoomOutBtn.addEventListener('click', () => {
-      scale = clampScale(scale - 0.12);
-      applyTransform();
-    });
-
-    resetBtn.addEventListener('click', resetView);
-
-    qualityToggleBtn.addEventListener('click', () => {
-      ultraMode = !ultraMode;
-      qualityToggleBtn.textContent = ultraMode ? 'Quality: Ultra' : 'Quality: Standard';
-      if (imageReady) {
-        buildToneMap();
-        requestRender();
-      }
-    });
 
     function setDragOrigin(pointerId, x, y) {
       dragPointerId = pointerId;
@@ -476,6 +318,32 @@
         applyTransform();
       }
     }
+
+    zoomRange.addEventListener('input', () => {
+      scale = clampScale(Number(zoomRange.value));
+      applyTransform();
+    });
+
+    zoomInBtn.addEventListener('click', () => {
+      scale = clampScale(scale + 0.12);
+      applyTransform();
+    });
+
+    zoomOutBtn.addEventListener('click', () => {
+      scale = clampScale(scale - 0.12);
+      applyTransform();
+    });
+
+    resetBtn.addEventListener('click', resetView);
+
+    qualityToggleBtn.addEventListener('click', () => {
+      ultraMode = !ultraMode;
+      qualityToggleBtn.textContent = ultraMode ? 'Quality: Ultra' : 'Quality: Standard';
+      const currentScale = scale;
+      buildText();
+      scale = currentScale;
+      applyTransform();
+    });
 
     wrap.addEventListener('pointerdown', (event) => {
       event.preventDefault();
@@ -535,16 +403,15 @@
       applyTransform();
     }, { passive: false });
 
-    source.onload = () => {
-      imageReady = true;
-      buildToneMap();
-      resizeCanvas();
-      applyTransform();
+    const previewImage = new Image();
+    previewImage.onload = () => {
+      document.documentElement.style.setProperty('--portrait-w', String(previewImage.naturalWidth || 3));
+      document.documentElement.style.setProperty('--portrait-h', String(previewImage.naturalHeight || 4));
+      portraitText.style.backgroundImage = `url(${imagePath})`;
+      buildText();
+      resetView();
     };
-
-    window.addEventListener('resize', resizeCanvas);
-
-    resetView();
+    previewImage.src = imagePath;
   </script>
 </body>
 </html>
