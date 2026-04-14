@@ -353,6 +353,21 @@ h1 {
   font-size: clamp(1.35rem, 2.6vw, 2rem);
 }
 
+.reason-media {
+  margin-top: 0.9rem;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.reason-gif {
+  display: block;
+  width: 100%;
+  height: min(44vw, 280px);
+  border: 0;
+}
+
 .app-nav {
   position: fixed;
   left: 50%;

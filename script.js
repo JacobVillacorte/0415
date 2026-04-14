@@ -11,6 +11,8 @@ const photoGridEl = document.getElementById("photoGrid");
 const reasonTextEl = document.getElementById("reasonText");
 const reasonIndexEl = document.getElementById("reasonIndex");
 const reasonCardEl = document.getElementById("reasonCard");
+const reasonMediaEl = document.getElementById("reasonMedia");
+const reasonGifEl = document.getElementById("reasonGif");
 const modal = document.getElementById("surpriseModal");
 const letterTitleEl = document.getElementById("letterTitle");
 const letterBodyEl = document.getElementById("letterBody");
@@ -27,6 +29,7 @@ const nextReasonBtn = document.getElementById("nextReasonBtn");
 const prevReasonBtn = document.getElementById("prevReasonBtn");
 const spawnHeartsBtn = document.getElementById("spawnHeartsBtn");
 const musicToggleBtn = document.getElementById("musicToggle");
+const portraitLinkEl = document.querySelector(".portrait-link");
 
 const bgMusic = document.getElementById("bgMusic");
 const musicSource = document.getElementById("musicSource");
@@ -84,8 +87,20 @@ function renderReason() {
   }
 
   reasonCursor = reasonCursor % reasons.length;
+  const activeReason = reasons[reasonCursor] || "";
   reasonIndexEl.textContent = String(reasonCursor + 1);
-  reasonTextEl.textContent = reasons[reasonCursor];
+  reasonTextEl.textContent = activeReason;
+
+  if (reasonMediaEl && reasonGifEl) {
+    const isDeliciousReason = /delicious/i.test(activeReason);
+    reasonMediaEl.hidden = !isDeliciousReason;
+
+    if (isDeliciousReason) {
+      reasonGifEl.src = "https://tenor.com/embed/6113775";
+    } else if (reasonGifEl.src) {
+      reasonGifEl.removeAttribute("src");
+    }
+  }
 }
 
 function renderPhotos() {
@@ -279,6 +294,21 @@ function setupMusic() {
 
   bgMusic.volume = typeof musicConfig.volume === "number" ? musicConfig.volume : 0.55;
 
+  function persistMusicState() {
+    try {
+      sessionStorage.setItem(
+        "anniversaryMusicState",
+        JSON.stringify({
+          currentSongIndex,
+          isPlaying: !bgMusic.paused,
+          updatedAt: Date.now()
+        })
+      );
+    } catch (_err) {
+      // Ignore storage failures.
+    }
+  }
+
   currentSongIndex = Math.min(
     Math.max(Number(musicConfig.defaultSongIndex || 0), 0),
     songs.length - 1
@@ -291,6 +321,7 @@ function setupMusic() {
     currentSongIndex = index;
     musicSource.src = selectedSong.url;
     bgMusic.load();
+    persistMusicState();
   }
 
   function getRandomSongIndex() {
@@ -314,14 +345,22 @@ function setupMusic() {
       try {
         await bgMusic.play();
         musicToggleBtn.textContent = "Pause song";
+        persistMusicState();
       } catch (_err) {
         musicToggleBtn.textContent = "Tap again to play";
       }
     } else {
       bgMusic.pause();
       musicToggleBtn.textContent = "Play random song";
+      persistMusicState();
     }
   });
+
+  if (portraitLinkEl) {
+    portraitLinkEl.addEventListener("click", () => {
+      persistMusicState();
+    });
+  }
 }
 
 function resizeCanvas() {

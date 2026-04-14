@@ -16,6 +16,7 @@
       --subject-image: url('./picjah1.png');
       --black: #070707;
       --regular: 11px;
+      --text-zoom: 1;
       --brightness: 0.95;
       --grayscale: 1;
       --invert: 0;
@@ -71,13 +72,13 @@
       grid-template-rows: auto 1fr;
       align-items: start;
       gap: 1rem;
-      padding: 1rem;
+      padding: 4.8rem 1rem 1rem;
     }
 
     .portrait-stage {
       width: min(92vw, 560px);
       aspect-ratio: 3 / 4;
-      margin: 1rem auto 0;
+      margin: 0 auto;
       padding: 0.7rem;
       border-radius: 28px;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
@@ -90,12 +91,27 @@
       -webkit-user-select: none;
     }
 
+    .portrait-image {
+      position: absolute;
+      inset: 0.7rem;
+      width: calc(100% - 1.4rem);
+      height: calc(100% - 1.4rem);
+      object-fit: cover;
+      object-position: center 16%;
+      filter: grayscale(1) contrast(1.08) brightness(1.04);
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+      z-index: 0;
+    }
+
     .portrait-shell {
       position: absolute;
       inset: 0.7rem;
       transform-origin: center center;
       will-change: transform;
-      transform: translate(var(--offset-x, 0px), var(--offset-y, 0px)) scale(var(--scale, 1));
+      transform: translate(var(--offset-x, 0px), var(--offset-y, 0px));
+      z-index: 1;
     }
 
     p {
@@ -110,10 +126,11 @@
       color: transparent;
       background-clip: text;
       background-image: var(--subject-image);
-      filter: brightness(var(--brightness)) grayscale(var(--grayscale)) invert(var(--invert)) contrast(1.18);
+      filter: brightness(1) grayscale(1) contrast(1.28);
+      opacity: 0.76;
       font-family: 'Inter', sans-serif;
-      font-size: var(--regular);
-      line-height: var(--regular);
+      font-size: calc(var(--regular) * var(--text-zoom));
+      line-height: calc(var(--regular) * var(--text-zoom));
       text-align: justify;
       -webkit-text-fill-color: transparent;
       -webkit-background-clip: text;
@@ -154,18 +171,23 @@
 
     @media (max-width: 720px) {
       :root {
-        --regular: 5px;
+        --regular: 5.2px;
       }
 
       .page {
-        padding: 0.85rem;
+        padding: 4.4rem 0.85rem 0.85rem;
       }
 
       .portrait-stage {
         width: min(94vw, 100%);
-        margin-top: 0.9rem;
         padding: 0.55rem;
         border-radius: 24px;
+      }
+
+      .portrait-image {
+        inset: 0.55rem;
+        width: calc(100% - 1.1rem);
+        height: calc(100% - 1.1rem);
       }
 
       .portrait-shell {
@@ -188,6 +210,7 @@
   <div class="page">
     <a class="back" href="index.html">Back to anniversary</a>
     <div id="portraitStage" class="portrait-stage">
+      <img class="portrait-image" src="./picjah1.png" alt="Portrait memory" />
       <div id="portraitShell" class="portrait-shell">
         <p id="text" title="Powered by CSS Text Portrait Builder">Loading portrait text...</p>
       </div>
@@ -209,6 +232,7 @@
     const zoomInBtn = document.getElementById('zoomInBtn');
     const zoomOutBtn = document.getElementById('zoomOutBtn');
     const resetBtn = document.getElementById('resetBtn');
+    const musicStateKey = 'anniversaryMusicState';
     const portraitTextSource = (
       (window.ANNIVERSARY_CONFIG && window.ANNIVERSARY_CONFIG.portraitText) ||
       'I love you I love you I love you I love you I love you I love you I love you'
@@ -281,6 +305,80 @@
       portraitText.textContent = `${portraitTextSource} `.repeat(Math.ceil(maxChar / textCount)).substring(0, maxChar + 1);
     }
 
+    function setupPortraitMusic() {
+      const musicConfig = (window.ANNIVERSARY_CONFIG && window.ANNIVERSARY_CONFIG.music) || {};
+      const songs = Array.isArray(musicConfig.songs) ? musicConfig.songs : [];
+
+      if (!musicConfig.enabled || !songs.length) {
+        return;
+      }
+
+      let previousState = null;
+      try {
+        previousState = JSON.parse(sessionStorage.getItem(musicStateKey) || 'null');
+      } catch (_err) {
+        previousState = null;
+      }
+
+      let nextIndex = 0;
+
+      if (previousState && previousState.isPlaying && songs.length > 1) {
+        const previousIndex = Number(previousState.currentSongIndex);
+        nextIndex = Math.floor(Math.random() * songs.length);
+        while (nextIndex === previousIndex) {
+          nextIndex = Math.floor(Math.random() * songs.length);
+        }
+      } else {
+        nextIndex = Math.min(
+          Math.max(Number(musicConfig.defaultSongIndex || 0), 0),
+          songs.length - 1
+        );
+      }
+
+      const player = new Audio(songs[nextIndex].url);
+      player.loop = true;
+      player.volume = typeof musicConfig.volume === 'number' ? musicConfig.volume : 0.55;
+
+      function persistState(isPlaying) {
+        try {
+          sessionStorage.setItem(
+            musicStateKey,
+            JSON.stringify({
+              currentSongIndex: nextIndex,
+              isPlaying,
+              updatedAt: Date.now()
+            })
+          );
+        } catch (_err) {
+          // Ignore storage failures.
+        }
+      }
+
+      const attemptPlay = async () => {
+        try {
+          await player.play();
+          persistState(true);
+        } catch (_err) {
+          const resume = async () => {
+            try {
+              await player.play();
+              persistState(true);
+            } catch (_ignore) {
+              // Autoplay still blocked.
+            }
+          };
+
+          window.addEventListener('pointerdown', resume, { once: true });
+          window.addEventListener('touchstart', resume, { once: true });
+        }
+      };
+
+      player.addEventListener('pause', () => persistState(false));
+      player.addEventListener('play', () => persistState(true));
+
+      attemptPlay();
+    }
+
     function clampScale(value) {
       return Math.min(maxScale, Math.max(minScale, value));
     }
@@ -300,7 +398,7 @@
     function applyTransform() {
       offsetX = clampOffset(offsetX, 'x');
       offsetY = clampOffset(offsetY, 'y');
-      portraitShell.style.setProperty('--scale', String(scale));
+      portraitText.style.setProperty('--text-zoom', String(scale));
       portraitShell.style.setProperty('--offset-x', `${offsetX}px`);
       portraitShell.style.setProperty('--offset-y', `${offsetY}px`);
       zoomRange.value = String(scale);
@@ -347,6 +445,12 @@
       dragPointerId = null;
     });
 
+    portraitStage.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      scale = clampScale(scale + (event.deltaY < 0 ? 0.08 : -0.08));
+      rebuildPortrait();
+    }, { passive: false });
+
     zoomRange.addEventListener('input', () => {
       scale = clampScale(Number(zoomRange.value));
       rebuildPortrait();
@@ -365,6 +469,7 @@
     resetBtn.addEventListener('click', resetView);
 
     setText();
+    setupPortraitMusic();
     window.addEventListener('load', setText);
     window.addEventListener('resize', rebuildPortrait);
   </script>
