@@ -271,10 +271,10 @@
       let drawW;
       let drawH;
       if (imageRatio > viewRatio) {
-        drawW = width * 0.94 * scale;
+        drawW = width * 0.98 * scale;
         drawH = drawW / imageRatio;
       } else {
-        drawH = height * 0.9 * scale;
+        drawH = height * 0.97 * scale;
         drawW = drawH * imageRatio;
       }
 
@@ -282,9 +282,9 @@
       const top = height / 2 - drawH / 2 + offsetY;
       const baseSize = ultraMode ? 3.9 : 4.6;
       const zoomReveal = Math.max(0, Math.min(1, (scale - 1) / 2.8));
-      const baseFont = Math.max(baseSize, Math.min(width, height) / (ultraMode ? 112 : 100));
-      // Bigger text on zoom-in, smaller text on zoom-out.
-      const fontSize = baseFont * Math.pow(scale, ultraMode ? 0.78 : 0.74);
+      const baseFont = Math.max(baseSize, Math.min(width, height) / (ultraMode ? 210 : 178));
+      // Denser micro-text at zoom-out, progressively readable on zoom-in.
+      const fontSize = baseFont * Math.pow(scale, ultraMode ? 0.9 : 0.86);
       const lineH = fontSize * 1.08;
       const rows = Math.ceil(height / lineH) + 3;
 
@@ -309,12 +309,14 @@
       for (let row = 0; row < rows; row += 1) {
         const drawY = startY + row * lineH;
         let drawX = startX;
+        // Keep line-like paragraph flow with a row offset.
+        pointer = (pointer + row * 3) % lyricWords.length;
 
         while (drawX < width + fontSize * 2) {
           const px = (drawX - left) / drawW;
           const py = (drawY - top) / drawH;
           if (px < 0 || py < 0 || px >= 1 || py >= 1) {
-            drawX += fontSize * 2.8;
+            drawX += fontSize * 2.4;
             continue;
           }
 
@@ -328,9 +330,17 @@
           const wordW = widthCache.get(word) || ctx.measureText(word).width;
           pointer += 1;
 
-          // Keep the horizontal paragraph/code flow while controlling apparent density via alpha.
+          // Strict density mapping from source luminance.
           const alpha = (0.02 + darkness * 0.98) * (1 - zoomReveal * 0.22);
-          if (alpha < 0.04) {
+          if (darkness < 0.08) {
+            drawX += wordW * 0.95;
+            continue;
+          }
+          if (darkness < 0.24 && ((row + Math.floor(drawX)) % 3 !== 0)) {
+            drawX += wordW * 0.9;
+            continue;
+          }
+          if (darkness < 0.45 && ((row + Math.floor(drawX)) % 2 !== 0)) {
             drawX += wordW * 0.9;
             continue;
           }
@@ -348,7 +358,7 @@
             ctx.fillText(word, drawX - wordW * 0.16, drawY + lineH * 0.1);
           }
 
-          const spacingBase = darkness > 0.76 ? 0.18 : darkness > 0.45 ? 0.4 : 0.82;
+          const spacingBase = darkness > 0.78 ? 0.08 : darkness > 0.52 ? 0.24 : darkness > 0.3 ? 0.48 : 0.92;
           const spacing = spacingBase + zoomReveal * 0.55;
           drawX += wordW + wordW * spacing;
         }
@@ -356,7 +366,7 @@
     }
 
     function buildToneMap() {
-      const maxSide = ultraMode ? 2000 : 1500;
+      const maxSide = ultraMode ? 3200 : 2200;
       imageRatio = source.width / source.height;
       if (source.width >= source.height) {
         grayWidth = maxSide;
