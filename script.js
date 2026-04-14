@@ -6,12 +6,20 @@ const favoriteLineEl = document.getElementById("favoriteLine");
 const daysTogetherEl = document.getElementById("daysTogether");
 const countdownEl = document.getElementById("countdown");
 const timelineListEl = document.getElementById("timelineList");
+const memoryWishEl = document.getElementById("memoryWish");
+const photoGridEl = document.getElementById("photoGrid");
 const reasonTextEl = document.getElementById("reasonText");
 const reasonIndexEl = document.getElementById("reasonIndex");
 const reasonCardEl = document.getElementById("reasonCard");
 const modal = document.getElementById("surpriseModal");
 const letterTitleEl = document.getElementById("letterTitle");
 const letterBodyEl = document.getElementById("letterBody");
+
+const screenDeckEl = document.getElementById("screenDeck");
+const prevScreenBtn = document.getElementById("prevScreenBtn");
+const nextScreenBtn = document.getElementById("nextScreenBtn");
+const screenDotsEl = document.getElementById("screenDots");
+const screenCountEl = document.getElementById("screenCount");
 
 const openModalBtn = document.getElementById("playSurpriseBtn");
 const closeModalBtn = document.getElementById("closeModalBtn");
@@ -28,12 +36,22 @@ const ctx = canvas.getContext("2d");
 
 let reasonCursor = 0;
 let hearts = [];
+let currentScreen = 0;
+let startX = 0;
+let startY = 0;
+let hasTouchStart = false;
+
+const screens = Array.from(document.querySelectorAll(".screen"));
+let screenDots = [];
 
 function applyConfig() {
   partnerNameEl.textContent = config.partnerName || "My Love";
   heroMessageEl.textContent = config.heroMessage || "Another year, another chapter, same heartbeat.";
   favoriteLineEl.textContent = config.favoriteLine || "You still give me butterflies.";
   letterTitleEl.textContent = config.letterTitle || "To the one who changed everything";
+  memoryWishEl.textContent =
+    config.memoryWish ||
+    "I love every sponty trip and date with you, and I am hoping we can take more pictures and make more memories soon.";
   letterBodyEl.textContent =
     config.letterBody ||
     "Thank you for being my calm and my chaos, my comfort and my courage. Happy anniversary.";
@@ -66,6 +84,32 @@ function renderReason() {
   reasonCursor = reasonCursor % reasons.length;
   reasonIndexEl.textContent = String(reasonCursor + 1);
   reasonTextEl.textContent = reasons[reasonCursor];
+}
+
+function renderPhotos() {
+  const photos = Array.isArray(config.photos) ? config.photos : [];
+  photoGridEl.innerHTML = "";
+
+  if (!photos.length) {
+    const empty = document.createElement("p");
+    empty.className = "photo-empty";
+    empty.textContent = "Add photos in config.js to show your memory gallery.";
+    photoGridEl.appendChild(empty);
+    return;
+  }
+
+  photos.forEach((photo, index) => {
+    const card = document.createElement("article");
+    card.className = "photo-card";
+
+    const image = document.createElement("img");
+    image.src = photo.url;
+    image.alt = photo.alt || `Memory photo ${index + 1}`;
+    image.loading = "lazy";
+
+    card.appendChild(image);
+    photoGridEl.appendChild(card);
+  });
 }
 
 function parseStartDate() {
@@ -102,20 +146,88 @@ function updateTimeStats() {
   countdownEl.textContent = `${days}d ${hours}h ${mins}m`;
 }
 
-function setupReveal() {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("show");
-          observer.unobserve(entry.target);
-        }
-      });
+function goToScreen(index) {
+  const bounded = Math.max(0, Math.min(index, screens.length - 1));
+  currentScreen = bounded;
+
+  screens.forEach((screen, idx) => {
+    screen.classList.toggle("active", idx === currentScreen);
+  });
+
+  screenDots.forEach((dot, idx) => {
+    dot.classList.toggle("active", idx === currentScreen);
+  });
+
+  prevScreenBtn.disabled = currentScreen === 0;
+  nextScreenBtn.disabled = currentScreen === screens.length - 1;
+  screenCountEl.textContent = `${currentScreen + 1} / ${screens.length}`;
+}
+
+function setupScreens() {
+  screenDotsEl.innerHTML = "";
+
+  screenDots = screens.map((_screen, index) => {
+    const dot = document.createElement("button");
+    dot.className = "screen-dot";
+    dot.type = "button";
+    dot.setAttribute("aria-label", `Go to screen ${index + 1}`);
+    dot.addEventListener("click", () => goToScreen(index));
+    screenDotsEl.appendChild(dot);
+    return dot;
+  });
+
+  prevScreenBtn.addEventListener("click", () => goToScreen(currentScreen - 1));
+  nextScreenBtn.addEventListener("click", () => goToScreen(currentScreen + 1));
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft") {
+      goToScreen(currentScreen - 1);
+    }
+    if (event.key === "ArrowRight") {
+      goToScreen(currentScreen + 1);
+    }
+  });
+
+  screenDeckEl.addEventListener(
+    "touchstart",
+    (event) => {
+      if (!event.touches.length) {
+        return;
+      }
+      hasTouchStart = true;
+      startX = event.touches[0].clientX;
+      startY = event.touches[0].clientY;
     },
-    { threshold: 0.15 }
+    { passive: true }
   );
 
-  document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
+  screenDeckEl.addEventListener(
+    "touchend",
+    (event) => {
+      if (!hasTouchStart || !event.changedTouches.length) {
+        return;
+      }
+
+      const endX = event.changedTouches[0].clientX;
+      const endY = event.changedTouches[0].clientY;
+      const deltaX = endX - startX;
+      const deltaY = endY - startY;
+
+      hasTouchStart = false;
+      if (Math.abs(deltaX) < 45 || Math.abs(deltaY) > 60) {
+        return;
+      }
+
+      if (deltaX < 0) {
+        goToScreen(currentScreen + 1);
+      } else {
+        goToScreen(currentScreen - 1);
+      }
+    },
+    { passive: true }
+  );
+
+  goToScreen(0);
 }
 
 function setupMusic() {
@@ -241,9 +353,10 @@ function wireEvents() {
 function init() {
   applyConfig();
   renderTimeline();
+  renderPhotos();
   renderReason();
   updateTimeStats();
-  setupReveal();
+  setupScreens();
   setupMusic();
   wireEvents();
 

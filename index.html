@@ -17,55 +17,83 @@
 <body>
   <div class="bg-noise" aria-hidden="true"></div>
 
-  <header class="hero section reveal">
-    <p class="eyebrow">For my favorite person</p>
-    <h1><span id="partnerName">My Love</span>, happy anniversary.</h1>
-    <p class="hero-copy" id="heroMessage">
-      Another year, another chapter, same heartbeat.
-    </p>
-    <div class="hero-actions">
-      <button id="playSurpriseBtn" class="btn btn-primary" type="button">Open your surprise</button>
-      <button id="spawnHeartsBtn" class="btn btn-ghost" type="button">Rain hearts</button>
-      <button id="musicToggle" class="btn btn-ghost" type="button">Play our song</button>
-    </div>
-    <audio id="bgMusic" loop>
-      <source id="musicSource" type="audio/mpeg">
-    </audio>
-  </header>
-
-  <main>
-    <section class="section stats reveal" aria-label="Anniversary stats">
-      <article class="stat-card">
-        <p class="stat-label">Together for</p>
-        <p id="daysTogether" class="stat-value">0 days</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-label">Next anniversary in</p>
-        <p id="countdown" class="stat-value">0d 0h 0m</p>
-      </article>
-      <article class="stat-card">
-        <p class="stat-label">Favorite line</p>
-        <p id="favoriteLine" class="stat-value small">You still give me butterflies.</p>
-      </article>
+  <main class="screen-deck" id="screenDeck" aria-live="polite">
+    <section class="screen active" data-screen="0" aria-label="Hero screen">
+      <div class="section hero">
+        <p class="eyebrow">For my favorite person</p>
+        <h1><span id="partnerName">My Love</span>, happy anniversary.</h1>
+        <p class="hero-copy" id="heroMessage">
+          Another year, another chapter, same heartbeat.
+        </p>
+        <div class="hero-actions">
+          <button id="playSurpriseBtn" class="btn btn-primary" type="button">Open your surprise</button>
+          <button id="spawnHeartsBtn" class="btn btn-ghost" type="button">Rain hearts</button>
+          <button id="musicToggle" class="btn btn-ghost" type="button">Play our song</button>
+        </div>
+      </div>
     </section>
 
-    <section class="section timeline reveal" aria-label="Memory timeline">
-      <h2>Our little timeline</h2>
-      <div id="timelineList" class="timeline-list"></div>
+    <section class="screen" data-screen="1" aria-label="Stats and timeline screen">
+      <div class="section screen-content">
+        <section class="stats" aria-label="Anniversary stats">
+          <article class="stat-card">
+            <p class="stat-label">Together for</p>
+            <p id="daysTogether" class="stat-value">0 days</p>
+          </article>
+          <article class="stat-card">
+            <p class="stat-label">Next anniversary in</p>
+            <p id="countdown" class="stat-value">0d 0h 0m</p>
+          </article>
+          <article class="stat-card">
+            <p class="stat-label">Favorite line</p>
+            <p id="favoriteLine" class="stat-value small">You still give me butterflies.</p>
+          </article>
+        </section>
+
+        <section class="timeline" aria-label="Memory timeline">
+          <h2>Our little timeline</h2>
+          <div id="timelineList" class="timeline-list"></div>
+        </section>
+      </div>
     </section>
 
-    <section class="section reasons reveal" aria-label="Reasons I love you">
-      <h2>Reasons I love you</h2>
-      <article class="reason-card" id="reasonCard">
-        <p class="reason-tag">Reason <span id="reasonIndex">1</span></p>
-        <p class="reason-text" id="reasonText">You make ordinary moments feel cinematic.</p>
-      </article>
-      <div class="reason-actions">
-        <button id="prevReasonBtn" class="btn btn-ghost" type="button">Previous</button>
-        <button id="nextReasonBtn" class="btn btn-primary" type="button">Next</button>
+    <section class="screen" data-screen="2" aria-label="Photo memories screen">
+      <div class="section screen-content memories">
+        <h2>Our sponty trips and dates</h2>
+        <p id="memoryWish" class="memory-wish">
+          I love every sponty trip and date with you, and I hope we take more pictures and make more memories soon.
+        </p>
+        <div id="photoGrid" class="photo-grid" aria-label="Photo memories"></div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="3" aria-label="Reasons screen">
+      <div class="section screen-content reasons-wrap">
+        <section class="reasons" aria-label="Reasons I love you">
+          <h2>Reasons I love you</h2>
+          <article class="reason-card" id="reasonCard">
+            <p class="reason-tag">Reason <span id="reasonIndex">1</span></p>
+            <p class="reason-text" id="reasonText">You make ordinary moments feel cinematic.</p>
+          </article>
+          <div class="reason-actions">
+            <button id="prevReasonBtn" class="btn btn-ghost" type="button">Previous</button>
+            <button id="nextReasonBtn" class="btn btn-primary" type="button">Next</button>
+          </div>
+        </section>
       </div>
     </section>
   </main>
+
+  <div class="app-nav" aria-label="Screen navigation">
+    <button id="prevScreenBtn" class="btn btn-ghost" type="button">Back</button>
+    <div id="screenDots" class="screen-dots" aria-label="Screen indicators"></div>
+    <button id="nextScreenBtn" class="btn btn-primary" type="button">Next</button>
+  </div>
+  <p id="screenCount" class="screen-count">1 / 4</p>
+
+  <audio id="bgMusic" loop>
+    <source id="musicSource" type="audio/mpeg">
+  </audio>
 
   <dialog id="surpriseModal" class="surprise-modal">
     <div class="modal-inner">
